@@ -123,12 +123,25 @@ effect_se <- function(centre,
 
 
 ## setting up col for storring means + estiamted means 
-is.na(dat$PowerAtMediumEffectMean) & is.na(dat$IQRMedium)
+is.na(dat$PowerAtMediumEffectMean) & is.na(dat$NoPowerButSampleSizesReported)
   
-  
-  
-  
-  
-  
-  
-  
+ifelse(is.na(dat$varMedium) & !is.na(dat$IQRMedium), eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtMedium, m = dat$PowerAtMediumEffectMedian, 
+                                                                    q.3 =  dat$ThirdQuartilePowerAtMedium, n = dat$NumberOfArticles), dat$varMedium)
+       
+wan_c3 <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtMedium[is.na(dat$varMedium) & !is.na(dat$IQRMedium)], 
+               m = dat$PowerAtMediumEffectMedian[is.na(dat$varMedium) & !is.na(dat$IQRMedium)], 
+               q.3 =  dat$ThirdQuartilePowerAtMedium[is.na(dat$varMedium) & !is.na(dat$IQRMedium)], 
+               n = as.numeric(dat$NumberOfArticles[is.na(dat$varMedium) & !is.na(dat$IQRMedium)]))
+location_binary<-is.na(dat$varMedium) & !is.na(dat$IQRMedium)
+dat$estMedMean <- NA
+dat$estMedMean[location_binary] <- wan_c3$centre
+dat$estMedMean[!location_binary] <- dat$PowerAtMediumEffectMean[!location_binary]
+
+dat$varMedium[location_binary] <- (wan_c3$se * sqrt(as.numeric(dat$NumberOfArticles[location_binary])))^2
+
+
+
+
+weighted.mean(dat$estMedMean[!is.na(dat$estMedMean) & !is.na(as.numeric(dat$NumberOfArticles))], 
+              as.numeric(dat$NumberOfArticles[!is.na(dat$estMedMean) & !is.na(as.numeric(dat$NumberOfArticles))]))
+
