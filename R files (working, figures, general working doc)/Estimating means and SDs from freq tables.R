@@ -23,16 +23,10 @@ library(binsmooth)
 library(bda)
 
 # articles to check: 
-dat$id[which(is.na(dat$varMedium) & is.na(dat$IQRMedium))]
-# [1]  96  99  73  92  59  62  42  89 
-# 112 112 113 121 115 123 
-# 119
-# [17] 122 124 131
+# checked articles extracted with dat$id[which(is.na(dat$varMedium) & is.na(dat$IQRMedium))]
+articlesChecked <- c(96, 99, 73, 92, 59, 62, 42, 89, 112, 113, 121, 115, 123, 119, 122, 124, 131)
 # articles checked 
-# 96 (only small avaliable), 99, 73 (no freq tables),92 (no freq tables), 
-# 59, 62, 42, 89 (no freq tables), 112 (actually reporst SDs in table directly),
-# 122 (no freq tables), 124, 131 
-#  113 (no freq tables),121, 115, 123 (not avaliable), 119
+
 
 # cASHEN, gEIGER 2004 # only small avaliable 
 lb <- c(.99, .95, .9, .85, .8, .7, .6, .5, .4, .3, .2, .1, .05)
@@ -117,7 +111,7 @@ large <- c(65, 30, 21, 26, 15, 14, 7, 5, 4, 4, 1, 0)
 
 pos <- 60 
 reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
-estimatedMeans <- c(0.228125, 0.6294271,  0.8524219)
+estimatedMeans <- c(0.2129196, 0.6294271,  0.8524219)
 meanDiffs[5,] <- reportedMeans - estimatedMeans
 
 # Overland, C. T.	Statistical Power in the Journal of Research in Music Education (2000-2010): A Retrospective Power Analysis	Bulletin of the Council for Research in Music Education	2014
@@ -148,7 +142,7 @@ meanAbsDiff<-mean(abs(as.matrix(meanDiffs)), na.rm = T)
 
 
 # all estiamted using: 
-ns<- medium # etc. 
+ns<- small # etc. 
 
 n <-sum(ns)
 estMean <- sum(powers * ns) / n
