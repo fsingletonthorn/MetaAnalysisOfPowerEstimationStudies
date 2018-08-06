@@ -140,7 +140,7 @@ dat$estMedMean[!location_binary] <- dat$PowerAtMediumEffectMean[!location_binary
 dat$varMedium[location_binary] <- (wan_c3$se * sqrt(as.numeric(dat$NumberOfArticles[location_binary])))^2
 
 
-
+dat$estMedMean[!is.na(dat$PowerAtMediumEffectMean)] <- dat$PowerAtMediumEffectMean[!is.na(dat$PowerAtMediumEffectMean)]
 
 weighted.mean(dat$estMedMean[!is.na(dat$estMedMean) & !is.na(as.numeric(dat$NumberOfArticles))], 
               as.numeric(dat$NumberOfArticles[!is.na(dat$estMedMean) & !is.na(as.numeric(dat$NumberOfArticles))]))
