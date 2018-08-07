@@ -18,9 +18,13 @@ dat <- subset(data, is.na(data$exclude))
 
 # alternative method
 # install.packages('binsmooth')
-library(binsmooth)
+library(binsmooth) # not used
 # install.packages('bda')
-library(bda)
+library(bda) # not used
+# install.packages('mixR')
+library(mixR) # not used
+library(psych)
+library("fitdistrplus")
 
 # articles to check: 
 # checked articles extracted with dat$id[which(is.na(dat$varMedium) & is.na(dat$IQRMedium))]
@@ -142,7 +146,7 @@ meanAbsDiff<-mean(abs(as.matrix(meanDiffs)), na.rm = T)
 
 
 # all estiamted using: 
-ns<- small # etc. 
+ns<- medium # etc. 
 
 n <-sum(ns)
 estMean <- sum(powers * ns) / n
@@ -168,8 +172,16 @@ temp<-binning(counts=rev(medium)[-1], breaks= rev(ub))
 plot(fit.GB(temp, 0,1))
 plot(temp)
 
+# binned matrix of tables
+binned <- matrix(c(lb,ub, medium), length(lb))
+# ordering table
+binned<-binned[order(binned[,2]),]
+# plot(bs.test(binned, c(2,1), family = 'gamma'))
 
+plot(mixfit(binned, 2, family = 'gamma'))
 
-
+res<-select(binned, 'gamma', ncomp = c(1,2,3))
+res
+plot(mixfit(binned, family = 'gamma', ncomp = 1))
 
 
