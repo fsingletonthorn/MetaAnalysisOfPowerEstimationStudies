@@ -7,7 +7,7 @@ data <- read_excel("~/PhD/Systematic Reviews/History of Power Estimation Studies
 # Counting
 # number of articles included = 50 (i.e., not discounting for missing data) 
 length(unique(subset(data$id, is.na(data$exclude) == TRUE))) 
-# number of datapoints = 64
+# number of datapoints (i.e., non exlcuded papers)
 sum(is.na(data$exclude))
 
 # removing all the exlusions
@@ -20,7 +20,27 @@ dat$IQRMedium <- dat$ThirdQuartilePowerAtMedium - dat$FirstQuartilePowerAtMedium
 which(is.na(dat$varMedium) & is.na(dat$IQRMedium))
 
 # num giving the median power at a medium benchmark
+sum(!is.na(dat$PowerAtSmallEffectMedian & is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & !is.na(dat$FirstQuartilePowerAtMedium)))
+sum(!is.na(dat$PowerAtMediumEffectMedian))
 sum(!is.na(dat$PowerAtLargeEffectMedian))
+
+# number missing means and SDs but providing SDs quartiles and medians
+sum(!is.na(dat$PowerAtSmallEffectMedian) & is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & !is.na(dat$FirstQuartilePowerAtMedium) & !is.na(dat$ThirdQuartilePowerAtMedium))
+# n articles  missing means and SDs but providing SDs quartiles and medians
+length(unique(dat$id[(!is.na(dat$PowerAtSmallEffectMedian) & is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & !is.na(dat$FirstQuartilePowerAtMedium) & !is.na(dat$ThirdQuartilePowerAtMedium))]))
+View(dat)
+# N articles no variances or quartiles 
+length(unique(dat$id[(is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & is.na(dat$FirstQuartilePowerAtMedium) & is.na(dat$ThirdQuartilePowerAtMedium))]))
+View(dat)
+
+
+
+## putting estimated Ms and 
+
+dat[c("PowerAtSmallEffectMean", "PowerAtMediumEffectMean", "PowerAtLargeEffectMean")][dat$id == 42,] <- c(0.2219, 0.68865, 0.8952)
+dat$
+
+
 
 # importing functions from veramata to estimate means from medians and to estimate the SE for various methods
 # (See Charles Grey's Dissertation for the completed package), or https://github.com/softloud/varameta before she finishes it! 
@@ -138,7 +158,6 @@ dat$estMedMean[location_binary] <- wan_c3$centre
 dat$estMedMean[!location_binary] <- dat$PowerAtMediumEffectMean[!location_binary]
 
 dat$varMedium[location_binary] <- (wan_c3$se * sqrt(as.numeric(dat$NumberOfArticles[location_binary])))^2
-
 
 dat$estMedMean[!is.na(dat$PowerAtMediumEffectMean)] <- dat$PowerAtMediumEffectMean[!is.na(dat$PowerAtMediumEffectMean)]
 

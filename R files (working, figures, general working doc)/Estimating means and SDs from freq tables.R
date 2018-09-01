@@ -1,36 +1,18 @@
 # estimating means and sds 
-
-# used to import data, but not required here:
-read.excel <- function(header=TRUE,...) {
-  read.table("clipboard",sep="\t",header=header,...)
-}
-
 data <- read_excel("~/PhD/Systematic Reviews/History of Power Estimation Studies/PowerEstimationReviewDataCollection2018.03.25.xlsx")
-
 # Counting
 # number of articles included = 50 (i.e., not discounting for missing data) 
 length(unique(subset(data$id, is.na(data$exclude) == TRUE))) 
 # number of datapoints = 64
 sum(is.na(data$exclude))
-
 # removing all the exlusions
 dat <- subset(data, is.na(data$exclude))
 
-# alternative method
-# install.packages('binsmooth')
-library(binsmooth) # not used
-# install.packages('bda')
-library(bda) # not used
-# install.packages('mixR')
-library(mixR) # not used
-library(psych)
-library("fitdistrplus")
 
 # articles to check: 
 # checked articles extracted with dat$id[which(is.na(dat$varMedium) & is.na(dat$IQRMedium))]
 articlesChecked <- c(96, 99, 73, 92, 59, 62, 42, 89, 112, 113, 121, 115, 123, 119, 122, 124, 131)
 # articles checked 
-
 
 # cASHEN, gEIGER 2004 # only small avaliable 
 lb <- c(.99, .95, .9, .85, .8, .7, .6, .5, .4, .3, .2, .1, .05)
@@ -90,9 +72,11 @@ powers <-  rowMeans(data.frame(lb, ub))
 small <- c(1, 2, 0, 1, 0, 2, 3, 5, 7, 13, 47, 19) 
 medium <- c(17, 7, 9, 11, 7, 11, 13, 8, 8, 6, 3, 0)
 large <- c(50, 11, 8, 14, 6, 2, 5, 2, 1, 1, 0, 0)
-# no reported means
-# estimatedMeans <- c(0.2219, 0.68865, 0.8952)
- 
+pos <- 97
+estimatedMeans <- c(0.2219, 0.68865, 0.8952)
+reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
+meanDiffs[4,] <- reportedMeans - estimatedMeans
+
 ## Borkowski, Susan C. Mary Jeanne Welsh and Zhang, Qinke	An Analysis of Statistical Power in Behavioral Accounting Research. Table 3
 lb <- c(.95, .9, .8, .7, .6, .5, .4, .3, .2, .1, .0)
 ub <-  c(.99, .94, .89, .79, .69, .59, .49, .39, .29, .19, .09)
@@ -103,7 +87,7 @@ large <- c(51, 12, 14, 11, 1, 6, 0, 1, 0, 0, 0)
 pos <- 59
 reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
 estimatedMeans <- c(0.2002083, 0.6551562,  0.8832813)
-meanDiffs[4,] <- reportedMeans - estimatedMeans
+meanDiffs[5,] <- reportedMeans - estimatedMeans
 
 # Woolley, Thomas W. and Dawson, George O.	A Follow-up Power Analysis of the Statistical Tests Used in the Journal of Research in Science Teaching. Table III
 lb <- c(.99, .95, .9, .80, .7, .6, .5, .4, .3, .2, .1, .0)
@@ -116,7 +100,7 @@ large <- c(65, 30, 21, 26, 15, 14, 7, 5, 4, 4, 1, 0)
 pos <- 60 
 reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
 estimatedMeans <- c(0.2129196, 0.6294271,  0.8524219)
-meanDiffs[5,] <- reportedMeans - estimatedMeans
+meanDiffs[6,] <- reportedMeans - estimatedMeans
 
 # Overland, C. T.	Statistical Power in the Journal of Research in Music Education (2000-2010): A Retrospective Power Analysis	Bulletin of the Council for Research in Music Education	2014
 # table 2 
@@ -128,7 +112,7 @@ medium <- c(29, 3, 14, 16, 8, 12, 11, 9, 8, 11, 3)
 large <- c(70, 9, 11, 12, 5, 4, 3, 2, 2, 5, 2)
 reportedMeans <- c(.24, .64, .84)
 estimatedMeans <- c(0.23684, 0.6281048,  0.8224)
-meanDiffs[6,] <- reportedMeans - estimatedMeans
+meanDiffs[7,] <- reportedMeans - estimatedMeans
 
 # Mazen, A. M. M., Hemmasi, M. and Lewis, M. F	Assessment of statistical power in contemporary strategy research
 # table 2
@@ -140,10 +124,10 @@ medium <- c(6, 2, 2, 3, 4, 4, 6, 4, 7, 3, 3, 0)
 large <- c(12, 6, 5, 6, 7, 3, 2, 1, 0, 1, 1, 0)
 reportedMeans <- c(.23,.59 ,.83)
 estimatedMeans <- c(0.2297727, 0.6015909,  0.8289773)
-meanDiffs[7,] <- reportedMeans - estimatedMeans
 
-meanAbsDiff<-mean(abs(as.matrix(meanDiffs)), na.rm = T)
+meanDiffs[8,] <- reportedMeans - estimatedMeans
 
+meanAbsDiff <- mean(abs(as.matrix(meanDiffs)), na.rm = T)
 
 # all estiamted using: 
 ns<- medium # etc. 
@@ -154,13 +138,32 @@ estVar <-  (sum(ns * powers^2)/n) - estMean^2
 estSD <- sqrt(estVar)
 estSD
 
-#### COULD USE THE ESTIMATED MEAN FOR HAASE 1974 and Woolley 1983, and verify the accuracy against others that have both
+
+
+
+
+
+
+
+########### DIST FITTING ##########
+# alternative method
+# install.packages('binsmooth')
+library(binsmooth) # not used
+# install.packages('bda')
+library(bda) # not used
+# install.packages('truncdist')
+library(mixR) # not used
+library(psych)
+library("fitdistrplus")
+library(truncdist)
+
 
 ub <-  rev(c(1, .98, .94, .89, .79, .69, .59, .49, .39, .29, .19, .09))
 medium <- rev(c(6, 2, 2, 3, 4, 4, 6, 4, 7, 3, 3, 0))
 
 
-fitted <- splinebins(bEdges =  (ub), bCounts = (medium), monoMethod = 'monoH.FC')
+# # This method assumes vals > 1 are possible ~ not ideal 
+fittedA <- splinebins(bEdges =  (ub), bCounts = (medium), monoMethod = 'monoH.FC')
 
 bde(x = medium, counts = medium, breaks = ub, lbound = .05)
 
@@ -173,15 +176,89 @@ plot(fit.GB(temp, 0,1))
 plot(temp)
 
 # binned matrix of tables
-binned <- matrix(c(lb,ub, medium), length(lb))
+binned <- matrix(c(lb,ub, large), length(lb))
 # ordering table
 binned<-binned[order(binned[,2]),]
 # plot(bs.test(binned, c(2,1), family = 'gamma'))
 
-plot(mixfit(binned, 2, family = 'gamma'))
+plot(mixfit(binned, 2, family = 'truncgamma'))
 
 res<-select(binned, 'gamma', ncomp = c(1,2,3))
 res
 plot(mixfit(binned, family = 'gamma', ncomp = 1))
 
+binned <-data.frame(binned)
+names(binned) <- c("left", "right", "count")
+ 
+### USING TRUNC 
+ptruncgamma <- function(q, shape, scale) {
+  p <- ptrunc(q, spec = 'gamma', a = 0, b = 1, shape = shape, scale = scale)
+  p[q >= 1] <- 0
+  return(p)
+}
+dtruncgamma <- function(x, shape, scale) {
+  dtrunc(x, spec = 'gamma', a = 0, b = 1, shape = shape, scale = scale)
+}
 
+
+# USING DEFAULT GAMMA
+ptruncgamma <- function(q, shape, scale) {
+  p <- pgamma(q, shape = shape, scale = scale)
+  p[q >= 1] <- 0
+  return(p)
+}
+
+dtruncgamma <- function(x, shape, scale) {
+  d <- dgamma(x, shape = shape, scale = scale)
+  d[x >= 1] <- 0
+  return(d)
+}
+
+
+
+init <- fitdistcens(binned, distr = "gamma", start = list(shape = .5, scale = .1))
+
+
+fitdistcens(binned, distr = "truncgamma", start = list(shape = as.numeric(init[[1]][1]), scale = as.numeric(init[[1]][2])))
+
+
+
+
+extrunc(spec = "gamma", a = 0, b = 1, shape = as.numeric(init[[1]][1]), scale = as.numeric(init[[1]][2]))
+vartrunc(spec = "gamma", a = 0, b = 1, shape = as.numeric(init[[1]][1]), scale = as.numeric(init[[1]][2]))
+
+
+
+dtrunc(1, 0, 1)
+
+truncnorm::dtruncnorm(1, )
+fitdistcens(binned, distr = "truncnorm", start = list(mean = .66, sd = .01), a = 0, b = 1)
+
+aa <- c(-10,-1,-0.5,-0.2,-0.15)
+## fit by MLE for the various lower bounds
+fits <- lapply(aa, function(a){
+  fitdistcens(binned, "truncnorm", fix.arg=list(a=a),
+          start = list(mean = .5, sd = .5))
+})
+
+
+fitdistcens(binned, distr = "truncgamma", start = list(shape = .5, scale = .1))
+
+ptrunc(2, spec = 'gamma', a = -0, b = 1, shape = as.numeric(init[[1]][1]), scale = as.numeric(init[[1]][2]))
+
+estimates<-as.numeric(fitdistcens(binned, distr = "beta")[[1]])
+
+
+mledist(binned, 'beta')
+
+?mledist
+plot(seq(-.1,1.1,.01),  dtruncgamma(seq(-.10,1.1,.01), shape = 1, scale = 1))
+
+plot(seq(-.1,1.1,.01),  dtruncgamma(seq(-.10,1.1,.01), shape = 1, scale = 1))
+plot(seq(-.1,1.1,.01),  pgamma(seq(-0.1,1.1,.01), shape = 1, scale = 1))
+
+
+plot(seq(-.5,1.5,.01),  dtruncnorm(seq(-.5,1.5,.01), mean = .5, sd = 1, a = 0, b = 1))
+plot(seq(-.5,1.5,.01),  dnorm(seq(-0.5,1.5,.01), mean = .5, sd = 1))
+
+dtru
