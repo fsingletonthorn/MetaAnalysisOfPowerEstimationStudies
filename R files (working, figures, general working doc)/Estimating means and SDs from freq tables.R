@@ -8,11 +8,34 @@ sum(is.na(data$exclude))
 # removing all the exlusions
 dat <- subset(data, is.na(data$exclude))
 
-
-# articles to check: 
 # checked articles extracted with dat$id[which(is.na(dat$varMedium) & is.na(dat$IQRMedium))]
+# these were all checked for frequency tables
 articlesChecked <- c(96, 99, 73, 92, 59, 62, 42, 89, 112, 113, 121, 115, 123, 119, 122, 124, 131)
-# articles checked 
+
+## All of the following means and SDs were caluclated using the follwoing after loading in the 
+# lb (lower bound from the frequency table), ub (upper bounds), ns between lb and ub, and powers -
+# The results were then written into the excel file directly ~  in the SDSmallAlgEstFromCDT, SDMediumAlgEstFromCDT, & SDLargeAlgEstFromCDT cols
+nsS<- small # etc. 
+nS <-sum(ns)
+estMeanS <- sum(powers * ns) / n
+estVarS <-  (sum(ns * powers^2)/n) - estMean^2
+estSDS <- sqrt(estVar)
+estSDS
+
+nsM<- medium # etc. 
+nM <-sum(ns)
+estMeanM <- sum(powers * ns) / n
+estVarM <-  (sum(ns * powers^2)/n) - estMean^2
+estSDM <- sqrt(estVar)
+estSDM
+
+nsL<- large # etc. 
+nL <-sum(ns)
+estMeanL <- sum(powers * ns) / n
+estVarL <-  (sum(ns * powers^2)/n) - estMean^2
+estSDL <- sqrt(estVar)
+
+
 
 # cASHEN, gEIGER 2004 # only small avaliable 
 lb <- c(.99, .95, .9, .85, .8, .7, .6, .5, .4, .3, .2, .1, .05)
@@ -25,7 +48,7 @@ ns <- c(12, 1, 1, 1, 0, 0, 1, 1, 2, 10, 10, 29, 9)
 # tracking means differences 
 meanDiffs <- data.frame(NA, NA, NA)
 names(meanDiffs) <- c("sd","md", "ld")
-meanDiffs[1,2] <- .29 - 0.3251309
+meanDiffs[1,1] <- .29 - 0.3251309
 
 # Mazen  Hemmasi & Lewis 1987
 # Table 2 
@@ -128,20 +151,6 @@ estimatedMeans <- c(0.2297727, 0.6015909,  0.8289773)
 meanDiffs[8,] <- reportedMeans - estimatedMeans
 
 meanAbsDiff <- mean(abs(as.matrix(meanDiffs)), na.rm = T)
-
-# all estiamted using: 
-ns<- medium # etc. 
-
-n <-sum(ns)
-estMean <- sum(powers * ns) / n
-estVar <-  (sum(ns * powers^2)/n) - estMean^2
-estSD <- sqrt(estVar)
-estSD
-
-
-
-
-
 
 
 

@@ -13,6 +13,9 @@ sum(is.na(data$exclude))
 # removing all the exlusions
 dat <- subset(data, is.na(data$exclude))
 
+# converting to numerics
+dat$NumberOfArticles<-as.numeric(dat$NumberOfArticles)
+
 # calculating variance and IQR 
 dat$varMedium <- dat$SDPowerAtMedium^2  
 dat$IQRMedium <- dat$ThirdQuartilePowerAtMedium - dat$FirstQuartilePowerAtMedium
@@ -20,7 +23,7 @@ dat$IQRMedium <- dat$ThirdQuartilePowerAtMedium - dat$FirstQuartilePowerAtMedium
 which(is.na(dat$varMedium) & is.na(dat$IQRMedium))
 
 # num giving the median power at a medium benchmark
-sum(!is.na(dat$PowerAtSmallEffectMedian & is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & !is.na(dat$FirstQuartilePowerAtMedium)))
+sum(!is.na(dat$PowerAtSmallEffectMedian))
 sum(!is.na(dat$PowerAtMediumEffectMedian))
 sum(!is.na(dat$PowerAtLargeEffectMedian))
 
@@ -28,22 +31,17 @@ sum(!is.na(dat$PowerAtLargeEffectMedian))
 sum(!is.na(dat$PowerAtSmallEffectMedian) & is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & !is.na(dat$FirstQuartilePowerAtMedium) & !is.na(dat$ThirdQuartilePowerAtMedium))
 # n articles  missing means and SDs but providing SDs quartiles and medians
 length(unique(dat$id[(!is.na(dat$PowerAtSmallEffectMedian) & is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & !is.na(dat$FirstQuartilePowerAtMedium) & !is.na(dat$ThirdQuartilePowerAtMedium))]))
-View(dat)
 # N articles no variances or quartiles 
 length(unique(dat$id[(is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & is.na(dat$FirstQuartilePowerAtMedium) & is.na(dat$ThirdQuartilePowerAtMedium))]))
-View(dat)
+# n article 
 
+## putting estimated Ms and SDs into the appropraite places 
+# 
+# dat[c("PowerAtSmallEffectMean", "PowerAtMediumEffectMean", "PowerAtLargeEffectMean")][dat$id == 42,] <- c(0.2219, 0.68865, 0.8952)
+dat[c("PowerAtSmallEffectMean", "PowerAtMediumEffectMean", "PowerAtLargeEffectMean")][dat$id == 62,] <- c(0.2456618, 0.5399306, 0.67625)
 
-
-## putting estimated Ms and 
-
-dat[c("PowerAtSmallEffectMean", "PowerAtMediumEffectMean", "PowerAtLargeEffectMean")][dat$id == 42,] <- c(0.2219, 0.68865, 0.8952)
-dat$
-
-
-
-# importing functions from veramata to estimate means from medians and to estimate the SE for various methods
-# (See Charles Grey's Dissertation for the completed package), or https://github.com/softloud/varameta before she finishes it! 
+# the following estimators are from Wan, X., Wang, W., Liu, J., & Tong, T. (2014). Estimating the sample mean and standard deviation from the sample size, median, range and/or interquartile range. BMC Medical Research Methodology, 14(1), 135. doi:10.1186/1471-2288-14-135
+# But the functions are from the package veramata, See Charles Grey's Dissertation for the completed package, or https://github.com/softloud/varameta before she finishes it. 
 # parameters in the following functions: 
 #   a Minimum value of sample.
 ##  m Median of sample.
@@ -78,6 +76,7 @@ eff_est_wan_c2 <- function(a, q.1, m, q.3, b, n) {
     se = s / sqrt(n)
   ))
 }
+
 
 eff_est_wan_c3 <- function(q.1, m, q.3, n) {
   x.bar <- (q.1 + m + q.3) / 3
@@ -141,26 +140,128 @@ effect_se <- function(centre,
   }
 }
 
+###### Estimating Small var and sd
+## setting up col for storring means + estiamted variance 
+dat$estSmallMean <- NA
+dat$varSmall <- NA
 
-## setting up col for storring means + estiamted means 
-is.na(dat$PowerAtMediumEffectMean) & is.na(dat$NoPowerButSampleSizesReported)
-  
-ifelse(is.na(dat$varMedium) & !is.na(dat$IQRMedium), eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtMedium, m = dat$PowerAtMediumEffectMedian, 
-                                                                    q.3 =  dat$ThirdQuartilePowerAtMedium, n = dat$NumberOfArticles), dat$varMedium)
-       
-wan_c3 <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtMedium[is.na(dat$varMedium) & !is.na(dat$IQRMedium)], 
-               m = dat$PowerAtMediumEffectMedian[is.na(dat$varMedium) & !is.na(dat$IQRMedium)], 
-               q.3 =  dat$ThirdQuartilePowerAtMedium[is.na(dat$varMedium) & !is.na(dat$IQRMedium)], 
-               n = as.numeric(dat$NumberOfArticles[is.na(dat$varMedium) & !is.na(dat$IQRMedium)]))
-location_binary<-is.na(dat$varMedium) & !is.na(dat$IQRMedium)
+# calculating wan c1 estimated mean and SEs following wan et al 
+dat[c('wanc2EstMean', 'wanc2EstSE')] <- eff_est_wan_c2(a = dat$PowerSmallMin, b = dat$PowerSmallMax, q.1 =  dat$FirstQuartilePowerAtSmall, m = dat$PowerAtSmallEffectMedian, 
+                                                       q.3 =  dat$ThirdQuartilePowerAtSmall, n = dat$NumberOfArticles)
+
+# calculating wan c3 estimated mean and SEs following wan et al 
+dat[c('wanc3EstMean', 'wanc3EstSE')] <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtSmall, m = dat$PowerAtSmallEffectMedian, 
+                                                                    q.3 =  dat$ThirdQuartilePowerAtSmall, n = dat$NumberOfArticles)
+
+# Building mean column, in order of preferences for the method that used the most inforamtion 
+# I.e., authors reported, Wan et al method c2, Wan et al, method c3
+dat$estSmallMean <- dat$wanc2EstMean 
+dat$estSmallMean[is.na(dat$estSmallMean)] <- dat$wanc3EstMean[is.na(dat$estSmallMean)]
+# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the mean)
+absDiffSmall <- abs(dat$estSmallMean - dat$PowerAtSmallEffectMean)
+# finishing off by using all of the reported means where possible
+dat$estSmallMean[!is.na(dat$PowerAtSmallEffectMean)] <- dat$PowerAtSmallEffectMean[!is.na(dat$PowerAtSmallEffectMean)]
+
+
+# Estimating variance column, in order of preferences for the method that has the most inforamtion 
+# I.e., authors SD, Wan et al method c2, Wan et al, method c3,
+dat$varSmall <- (dat$wanc2EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2
+dat$varSmall[is.na(dat$varSmall)] <- ((dat$wanc3EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2)[is.na(dat$varSmall)] 
+# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the sd)
+absDiffVarSmall <- abs(dat$varSmall- dat$SDPowerAtSmall^2)
+# overridding with vars calculated from quartiles 
+dat$varSmall[!is.na(dat$SDSmallAlgEstFromCDT)] <- dat$SDSmallAlgEstFromCDT[!is.na(dat$SDSmallAlgEstFromCDT)]
+# overridding with vars reported by authors  
+dat$varSmall[!is.na(dat$SDPowerAtSmall)] <- dat$SDPowerAtSmall[!is.na(dat$SDPowerAtSmall)]
+
+
+###### Estimating medium var and sd
+## setting up col for storring means + estiamted variance 
 dat$estMedMean <- NA
-dat$estMedMean[location_binary] <- wan_c3$centre
-dat$estMedMean[!location_binary] <- dat$PowerAtMediumEffectMean[!location_binary]
+dat$varMed <- NA
 
-dat$varMedium[location_binary] <- (wan_c3$se * sqrt(as.numeric(dat$NumberOfArticles[location_binary])))^2
+# calculating wan c1 estimated mean and SEs following wan et al 
+dat[c('wanc2EstMean', 'wanc2EstSE')] <- eff_est_wan_c2(a = dat$PowerMedMin, b = dat$PowerMedMax, q.1 =  dat$FirstQuartilePowerAtMedium, m = dat$PowerAtMediumEffectMedian, 
+                                                       q.3 =  dat$ThirdQuartilePowerAtMedium, n = dat$NumberOfArticles)
 
+# calculating wan c3 estimated mean and SEs following wan et al 
+dat[c('wanc3EstMean', 'wanc3EstSE')] <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtMedium, m = dat$PowerAtMediumEffectMedian, 
+                                                       q.3 =  dat$ThirdQuartilePowerAtMedium, n = dat$NumberOfArticles)
+
+# Building mean column, in order of preferences for the method that used the most inforamtion 
+# I.e., authors reported, Wan et al method c2, Wan et al, method c3
+dat$estMedMean <- dat$wanc2EstMean 
+dat$estMedMean[is.na(dat$estMedMean)] <- dat$wanc3EstMean[is.na(dat$estMedMean)]
+# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the mean)
+absDiffMed <- abs(dat$estMedMean - dat$PowerAtMediumEffectMean)
+# finishing off by using all of the reported means where possible
 dat$estMedMean[!is.na(dat$PowerAtMediumEffectMean)] <- dat$PowerAtMediumEffectMean[!is.na(dat$PowerAtMediumEffectMean)]
+
+
+# Estimating variance column, in order of preferences for the method that has the most inforamtion 
+# I.e., authors SD, Wan et al method c2, Wan et al, method c3,
+dat$varMed <- (dat$wanc2EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2
+dat$varMed[is.na(dat$varMed)] <- ((dat$wanc3EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2)[is.na(dat$varMed)] 
+# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the sd)
+absDiffVarMed <- mean(abs(dat$varMed- dat$SDPowerAtMedium^2), na.rm = T)
+# overridding with vars calculated from quartiles 
+dat$varMed[!is.na(dat$SDMedAlgEstFromCDT)] <- dat$SDMedAlgEstFromCDT[!is.na(dat$SDMedAlgEstFromCDT)]
+# overridding with vars reported by authors  
+dat$varMed[!is.na(dat$SDPowerAtMedium)] <- dat$SDPowerAtMedium[!is.na(dat$SDPowerAtMedium)]
+
+###### Estimating Large var and sd
+## setting up col for storring means + estiamted variance 
+dat$estLargeMean <- NA
+dat$varLarge <- NA
+
+# calculating wan c1 estimated mean and SEs following wan et al 
+dat[c('wanc2EstMean', 'wanc2EstSE')] <- eff_est_wan_c2(a = dat$PowerLargeMin, b = dat$PowerLargeMax, q.1 =  dat$FirstQuartilePowerAtLarge, m = dat$PowerAtLargeEffectMedian, 
+                                                       q.3 =  dat$ThirdQuartilePowerAtLarge, n = dat$NumberOfArticles)
+
+# calculating wan c3 estimated mean and SEs following wan et al 
+dat[c('wanc3EstMean', 'wanc3EstSE')] <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtLarge, m = dat$PowerAtLargeEffectMedian, 
+                                                       q.3 =  dat$ThirdQuartilePowerAtLarge, n = dat$NumberOfArticles)
+
+# Building mean column, in order of preferences for the method that used the most inforamtion 
+# I.e., authors reported, Wan et al method c2, Wan et al, method c3
+dat$estLargeMean <- dat$wanc2EstMean 
+dat$estLargeMean[is.na(dat$estLargeMean)] <- dat$wanc3EstMean[is.na(dat$estLargeMean)]
+# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the mean)
+absDiffLarge <- abs(dat$estLargeMean - dat$PowerAtLargeEffectMean)
+# finishing off by using all of the reported means where possible
+dat$estLargeMean[!is.na(dat$PowerAtLargeEffectMean)] <- dat$PowerAtLargeEffectMean[!is.na(dat$PowerAtLargeEffectMean)]
+
+
+# Estimating variance column, in order of preferences for the method that has the most inforamtion 
+# I.e., authors SD, Wan et al method c2, Wan et al, method c3,
+dat$varLarge <- (dat$wanc2EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2
+dat$varLarge[is.na(dat$varLarge)] <- ((dat$wanc3EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2)[is.na(dat$varLarge)] 
+# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the sd)
+absDiffVarLarge <- abs(dat$varLarge- dat$SDPowerAtLarge^2)
+# overridding with vars calculated from quartiles 
+dat$varLarge[!is.na(dat$SDLargeAlgEstFromCDT)] <- dat$SDLargeAlgEstFromCDT[!is.na(dat$SDLargeAlgEstFromCDT)]
+# overridding with vars reported by authors  
+dat$varLarge[!is.na(dat$SDPowerAtLarge)] <- dat$SDPowerAtLarge[!is.na(dat$SDPowerAtLarge)]
+
+##### Calculating mean absolute diffs
+meanAbsDiffVariance <- mean(c(absDiffVarLarge, absDiffVarMed, absDiffVarSmall) , na.rm = T)
+mean(c(absDiffVarMed) , na.rm = T)
+meanAbsDiffMean <- mean(c(absDiffLarge, absDiffMed, absDiffSmall), na.rm = T)
+
+
+### Need to impute SDs here for articles with various approaches
+
+
+
 
 weighted.mean(dat$estMedMean[!is.na(dat$estMedMean) & !is.na(as.numeric(dat$NumberOfArticles))], 
               as.numeric(dat$NumberOfArticles[!is.na(dat$estMedMean) & !is.na(as.numeric(dat$NumberOfArticles))]))
+
+weighted.mean(dat$estSmallMean[!is.na(dat$estSmallMean) & !is.na(as.numeric(dat$NumberOfArticles))], 
+              as.numeric(dat$NumberOfArticles[!is.na(dat$estSmallMean) & !is.na(as.numeric(dat$NumberOfArticles))]))
+
+weighted.mean(dat$estLargeMean[!is.na(dat$estLargeMean) & !is.na(as.numeric(dat$NumberOfArticles))], 
+              as.numeric(dat$NumberOfArticles[!is.na(dat$estLargeMean) & !is.na(as.numeric(dat$NumberOfArticles))]))
+
+
 
