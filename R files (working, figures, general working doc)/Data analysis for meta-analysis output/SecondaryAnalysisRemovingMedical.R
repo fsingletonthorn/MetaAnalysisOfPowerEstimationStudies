@@ -69,7 +69,7 @@ text(-1.2, 23, "Study",               pos=4)
 text( 1.7, 23, "Proportion [95% CI]", pos=2)
 
 #### Random effects meta analysis including median year as a moderator #####
-res1 <- rma(yi, vi, method="REML", data=dat, mods = medianYear)
+res1 <- rma(yi, vi, method="REML", data=dat, mods = medianYear-mean(medianYear))
 pred1 <- predict(res1, transf=transf.ipft.hm, targs=list(ni=dat$NumberOfArticlesExamined))
 pred1
 

@@ -1,6 +1,7 @@
 # packages 
 library(readxl)
 library(metafor)
+library(tidyverse)
 library(stringr)
 
 ########### Setting up functions for data imputation ########
@@ -42,8 +43,55 @@ eff_est_wan_c3 <- function(q.1, m, q.3, n) {
   ))
 }
 
-######### data importing and wrangling ###############
+effect_se <- function(centre,
+                      spread,
+                      n,
+                      centre_type = "mean",
+                      spread_type = "sd") {
+  
+ # Estimate the standard error of the effect, depending on how that effect is
+  # reported (median or mean).
+  #
+  # @param centre A sample mean or a median.
+  # @param spread The associated measure of spread for the sample mean: either
+  # a sample sd, sample interquartile range, or sample range.
+  # @param n The sample size.
+  # @param centre_type Specify if the center is "mean" or "median".
+  # @param spread_type Specify if the spread is reported as "sd", "var", "iqr", or "range".
+  #
+  # @export
+  
+  if (centre_type == "mean" & spread_type == "sd") {
+    return(se = spread / sqrt(n))
+  } else if (centre_type == "median") {
+    if (spread_type == "iqr") {
+      sn_arg <- 3 / 4
+    } else if (spread_type == "range") {
+      sn_arg <- (n - 1 / 2) / n
+    } else if (spread_type == "var") {
+      return(se = sqrt(spread /  n))
+    } else {
+      stop("Check that your spread_type is either \"var\",  \"iqr\", or \"range\".")
+    }
+    
+    # Estimate mu.
+    mu <- log(centre)
+    
+    # Estimate sigma.
+    sigma <-
+      1 / qnorm(sn_arg) *
+      log(1 / 2 *
+            (spread * exp(-mu) + sqrt(spread ^ 2 * exp(-2 * mu) + 4)))
+    
+    return(1 / (2 * sqrt(n) * dlnorm(
+      centre, meanlog = mu, sdlog = sigma
+    )))
+  } else {
+    stop("Check that your centre_type is of the form \"mean\" or \"median\".")
+  }
+}
 
+######### data importing and wrangling ###############
 # importing data
 data <- read_excel("~/PhD/Systematic Reviews/History of Power Estimation Studies/PowerEstimationReviewDataCollection2018.03.25.xlsx")
 
@@ -87,9 +135,18 @@ length(unique(dat$id[(!is.na(dat$PowerAtSmallEffectMedian) & is.na(dat$SDPowerAt
 # N articles no variances or quartiles 
 length(unique(dat$id[(is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & is.na(dat$FirstQuartilePowerAtMedium) & is.na(dat$ThirdQuartilePowerAtMedium))]))
 
-## putting estimated Ms and SDs into the appropraite places 
-# 
-dat[c("PowerAtSmallEffectMean", "PowerAtMediumEffectMean", "PowerAtLargeEffectMean")][dat$id == 62,] <- c(0.2456618, 0.5399306, 0.67625)
+## Recoding areas of reserach as per the preregistration 
+# “clinical psychology/psychiatry”, “social/personality”, “education”, “general psychology” (i.e., those studies which look across fields of psychology research), “management/IO psychology”, “cognitive psychology” “neuropsychology”, “meta-analysis”
+unique(dat$SubfieldClassification)
+
+dat$SubfieldClassification[dat$SubfieldClassification == "Cognitive neuroscience, psychology, psychiatry"] <- "clinical psychology/psychiatry"
+dat$SubfieldClassification[dat$SubfieldClassification == "Clinical"] <- "clinical psychology/psychiatry"
+dat$SubfieldClassification[dat$SubfieldClassification == "Neuroscience"] <- "Neuropsychology"
+dat$SubfieldClassification[dat$SubfieldClassification == "Medical Education"] <- "Education"
+
+## Counting articles with sample size reported
+sum(!is.na(dat$SampleMean))
+
 
 #### Estimating missing parameters ####
 ###### Estimating Small var and sd
@@ -100,7 +157,6 @@ dat$varSmall <- NA
 # calculating wan c1 estimated mean and SEs following wan et al 
 dat[c('wanc2EstMean', 'wanc2EstSE')] <- eff_est_wan_c2(a = dat$PowerSmallMin, b = dat$PowerSmallMax, q.1 =  dat$FirstQuartilePowerAtSmall, m = dat$PowerAtSmallEffectMedian, 
                                                        q.3 =  dat$ThirdQuartilePowerAtSmall, n = dat$NumberOfArticles)
-
 # calculating wan c3 estimated mean and SEs following wan et al 
 dat[c('wanc3EstMean', 'wanc3EstSE')] <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtSmall, m = dat$PowerAtSmallEffectMedian, 
                                                                     q.3 =  dat$ThirdQuartilePowerAtSmall, n = dat$NumberOfArticles)
@@ -114,7 +170,6 @@ absDiffSmall <- abs(dat$estSmallMean - dat$PowerAtSmallEffectMean)
 # finishing off by using all of the reported means where possible
 dat$estSmallMean[!is.na(dat$PowerAtSmallEffectMean)] <- dat$PowerAtSmallEffectMean[!is.na(dat$PowerAtSmallEffectMean)]
 
-
 # Estimating variance column, in order of preferences for the method that has the most inforamtion 
 # I.e., authors SD, Wan et al method c2, Wan et al, method c3,
 dat$varSmall <- (dat$wanc2EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2
@@ -125,7 +180,6 @@ absDiffVarSmall <- abs(dat$varSmall- dat$SDPowerAtSmall^2)
 dat$varSmall[!is.na(dat$SDSmallAlgEstFromCDT)] <- dat$SDSmallAlgEstFromCDT[!is.na(dat$SDSmallAlgEstFromCDT)]
 # overridding with vars reported by authors  
 dat$varSmall[!is.na(dat$SDPowerAtSmall)] <- dat$SDPowerAtSmall[!is.na(dat$SDPowerAtSmall)]^2
-
 
 ###### Estimating medium var and sd
 ## setting up col for storring means + estiamted variance 
@@ -149,13 +203,12 @@ absDiffMed <- abs(dat$estMedMean - dat$PowerAtMediumEffectMean)
 # finishing off by using all of the reported means where possible
 dat$estMedMean[!is.na(dat$PowerAtMediumEffectMean)] <- dat$PowerAtMediumEffectMean[!is.na(dat$PowerAtMediumEffectMean)]
 
-
 # Estimating variance column, in order of preferences for the method that has the most inforamtion 
 # I.e., authors SD, Wan et al method c2, Wan et al, method c3,
 dat$varMed <- (dat$wanc2EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2
 dat$varMed[is.na(dat$varMed)] <- ((dat$wanc3EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2)[is.na(dat$varMed)] 
 # calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the sd)
-absDiffVarMed <- mean(abs(dat$varMed- dat$SDPowerAtMedium^2), na.rm = T)
+absDiffVarMed <- abs(dat$varMed - dat$SDPowerAtMedium^2)
 # overridding with vars calculated from quartiles 
 dat$varMed[!is.na(dat$SDMedAlgEstFromCDT)] <- dat$SDMedAlgEstFromCDT[!is.na(dat$SDMedAlgEstFromCDT)]
 # overridding with vars reported by authors  
@@ -199,8 +252,22 @@ dat$varLarge[dat$varLarge == 0] <- NA
 meanAbsDiffVariance <- mean(c(absDiffVarLarge, absDiffVarMed, absDiffVarSmall) , na.rm = T)
 mean(c(absDiffVarMed) , na.rm = T)
 meanAbsDiffMean <- mean(c(absDiffLarge, absDiffMed, absDiffSmall), na.rm = T)
+# counting number of articles for which this varaiance and means estimation approach could be validated against 
+# N means validated against
+sum(!is.na(data.frame(absDiffLarge, absDiffMed, absDiffSmall)))
+# N articles means validated against
+sum(!is.na(rowMeans(data.frame(absDiffLarge, absDiffMed, absDiffSmall), na.rm = T)))
+# n articles variances validated against
+sum(!is.na(rowMeans(data.frame(absDiffVarLarge, absDiffVarMed, absDiffVarSmall), na.rm = T)))
+# n variances validated against
+sum(!is.na(data.frame(absDiffVarLarge, absDiffVarMed, absDiffVarSmall)))
 
-######## Data imputation #########
+
+## putting Means estimated from frequency plots into the appropraite places 
+dat[c("estSmallMean", "estMedMean", "estLargeMean")][dat$id == 62,] <- c(0.2456618, 0.5399306, 0.67625)
+
+
+######## Missing data imputation #########
 #### medium
 replacementVis <- mean(dat$varMed, na.rm = T)
 dat$varMed_MeanImpute <- dat$varMed
@@ -277,6 +344,11 @@ dat$samplingVarSmall_NoImputedData <- dat$SDPowerAtSmall^2/dat$NumberOfArticles
 dat$samplingVarMed_NoImputedData <- dat$SDPowerAtMedium^2/dat$NumberOfArticles
 dat$samplingVarLarge_NoImputedData <- dat$SDPowerAtLarge^2/dat$NumberOfArticles
 
+dat$samplingVarSmall_NoImputedData 
+dat$samplingVarMed_NoImputedData
+dat$samplingVarLarge_NoImputedData 
+
+
 #### Analysis ####
 ## Running models without any imputed data or any estimated data
 #### Most basic model #### Small effect size
@@ -285,6 +357,9 @@ resSmallNoImp <- rma(yi = estSmallMean, vi = samplingVarSmall_NoImputedData,  da
 resSmallNoImpML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_NoImputedData, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallNoImpMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+
+
 
 # Medium 
 #### Most basic model ####
@@ -293,6 +368,7 @@ resMedNoImp <- rma(yi = estMedMean, vi = samplingVarMed_NoImputedData,  data = d
 resMedNoImpML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_NoImputedData, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedNoImpMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
 
 # Large
 # No ML
@@ -301,7 +377,6 @@ resLargeNoImp <- rma(yi = estLargeMean, vi = samplingVarLarge_NoImputedData,  da
 resLargeNoImpML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_NoImputedData, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeNoImpMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
-
 
 
 # Running analyses with imputed data, this time with mean imputation. These are the main results in the paper. 
@@ -313,6 +388,12 @@ resMedMean <- rma(yi = estMedMean, vi = samplingVarMed_Mean,  data = dat, method
 resMedMeanML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | id,  data = dat, slab=StudyName)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMeanMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + as.numeric(YearsStudiedMean - mean(YearsStudiedMean))| SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
+
+
 
 ## same models with median imputation
 #### Most basic model ####
@@ -321,6 +402,9 @@ resMedMed <- rma(yi = estMedMean, vi = samplingVarMed_Med,  data = dat, method =
 resMedMedML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Med, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMedMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+
+
 
 ## same models with min imputation 
 #### Most basic model ####
@@ -336,7 +420,7 @@ resMedMax <- rma(yi = estMedMean, vi = samplingVarMed_Max,  data = dat, method =
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
 resMedMaxML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Max, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
-resMedMaxMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resMedMaxMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random = ~ (1 | id), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 
@@ -411,11 +495,110 @@ resLargeMaxML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Max, random 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMaxMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
+
+#### Sensititivty analysis ####
+##### Weigting by number of studies ####
+mediumWeighted <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | id,  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+smallWeighted <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | id,  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+largeWeighted <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | id,  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+
+## Estimating differences caused by weigting by number of studies 
+mediumWeighted$b - resMedMeanML$b
+smallWeighted$b - resSmallMeanML$b
+largeWeighted$b - resLargeMeanML$b
+
+# Estimating these with added year 
+mediumWeightedYear <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+smallWeightedYear <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+largeWeightedYear <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+
+## Estimating differences caused by weigting by number of studies 
+mediumWeightedYear$b - resMedMeanMLYear$b
+smallWeightedYear$b - resSmallMeanMLYear$b
+largeWeightedYear$b - resLargeMeanMLYear$b
+
+#### Differences with imputation or not ####
+
+
+## Estimating differences caused by data imputation 
+resSmallNoImpML$b - resSmallMeanML$b
+resMedNoImpML$b - resMedMeanML$b
+resLargeNoImpML$b - resLargeMeanML$b
+
+## Estimating differences caused by data imputation 
+resSmallNoImpMLYear$b - resSmallMeanMLYear$b
+resMedNoImpMLYear$b - resMedMeanMLYear$b
+resLargeNoImpMLYear$b - resLargeMeanMLYear$b
+
+# making tables for easy demostrations of the different values
+smallModels <- t(data.frame(resSmallMeanML$b,
+                            smallWeighted$b,
+                          resSmallNoImpML$b,
+                          resSmallMaxML$b,
+                          resSmallMinML$b,
+                          resSmallMedML$b))
+  
+mediumModels <- t(data.frame(resMedMeanML$b, 
+                            mediumWeighted$b,
+                             resMedNoImpML$b,
+                             resMedMaxML$b,
+                             resMedMinML$b,
+                             resMedMedML$b))
+  
+  
+largeModels <- t(data.frame(resLargeMeanML$b, 
+                            largeWeighted$b,
+                            resLargeNoImpML$b,
+                            resLargeMaxML$b,
+                            resLargeMinML$b,
+                            resLargeMedML$b)) 
+
+SensitivityAnalysis<- data.frame(smallModels, mediumModels, largeModels)
+# write.csv(round(SensitivityAnalysis, 3), file = "Plots/TableSensitivity1.csv")
+
+
+smallModelsYear <- t(data.frame(resSmallMeanMLYear$b,
+                            smallWeightedYear$b,
+                            resSmallNoImpMLYear$b,
+                            resSmallMaxMLYear$b,
+                            resSmallMinMLYear$b,
+                            resSmallMedMLYear$b))
+
+mediumModelsYear <- t(data.frame(resMedMeanMLYear$b, 
+                             mediumWeightedYear$b,
+                             resMedNoImpMLYear$b,
+                             resMedMaxMLYear$b,
+                             resMedMinMLYear$b,
+                             resMedMedMLYear$b))
+
+largeModelsYear <- t(data.frame(resLargeMeanMLYear$b, 
+                            largeWeightedYear$b,
+                            resLargeNoImpMLYear$b,
+                            resLargeMaxMLYear$b,
+                            resLargeMaxMLYear$b,
+                            resLargeMaxMLYear$b)) 
+SensitivityAnalysisYear<- data.frame(smallModelsYear, mediumModelsYear, largeModelsYear)
+write.csv(round(SensitivityAnalysisYear, 3), file = "Plots/TableSensitivity2.csv")
+
+
+
+###### Adding area of psychology rearach as a moderator
+
+
+
+
+
+
+
+
+
+
+
+
 ####### Plots #######
 forest(resLargeMeanML)
 qqnorm(resMedNoImp)
 funnel(resLargeMin)
-
 
 ##### PLOTS #### 
 # Plot forest plot medium benchmark (mean imputation)
@@ -442,8 +625,6 @@ text(6,                  26, "Risk Ratio [95% CI]", pos=2)
 # normal font 
 par(font=1)
 dev.off()
-
-
 
 
 # Plot forest plot small benchmark (mean sd imputation)
@@ -500,16 +681,103 @@ par(font=1)
 dev.off()
 
 
+#### Plots of change over time 
+
+
+##### Small 
+png(filename = "Plots/ScatterPlotSmall.png",width = 800, height = 500, units = "p")
+# PLOT medium  
+samplingVar <- dat$samplingVarSmall_Mean
+values <- dat$estSmallMean
+## Model with unstandardised years for plotting
+res <- rma.mv(yi = values, V = samplingVar, random = ~ 1 | id, mods = YearsStudiedMean,  data = dat, slab = StudyName)
+### calculate predicted risk ratios for 0 to 60 degrees absolute latitude
+preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+
+### calculate point sizes by rescaling the standard errors
+wi    <- 1/sqrt(samplingVar)
+size  <- 0.5 + 3.0 * (wi - min(wi, na.rm = T))/(max(wi, na.rm = T) - min(wi, na.rm = T))
+
+### plot the risk ratios against absolute latitude
+plot(dat$YearsStudiedMean[!is.na(samplingVar)], values[!is.na(samplingVar)], pch=19, cex=size, 
+     xlab="Year", ylab="Power at Small Benchmark", ylim = c(0,1),
+     las=1, bty="l")
+
+### add predicted values (and corresponding CI bounds)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$pred)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.lb, lty="dashed")
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.ub, lty="dashed")
+dev.off()
+
+
+
+##### Medium 
+png(filename = "Plots/ScatterPlotMedium.png",width = 800, height = 500, units = "p")
+# PLOT medium  
+samplingVar <- dat$samplingVarMed_Mean
+values <- dat$estMedMean
+## Model with unstandardised years for plotting
+res <- rma.mv(yi = values, V = samplingVar, random = ~ 1 | id, mods = YearsStudiedMean,  data = dat, slab = StudyName)
+### calculate predicted risk ratios for 0 to 60 degrees absolute latitude
+preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+
+### calculate point sizes by rescaling the standard errors
+wi    <- 1/sqrt(samplingVar)
+size  <- 0.5 + 3.0 * (wi - min(wi, na.rm = T))/(max(wi, na.rm = T) - min(wi, na.rm = T))
+
+### plot the risk ratios against absolute latitude
+plot(dat$YearsStudiedMean[!is.na(samplingVar)], dat$estMedMean[!is.na(samplingVar)], pch=19, cex=size, 
+     xlab="Year", ylab="Power at Medium Benchmark", ylim = c(0,1),
+     las=1, bty="l")
+
+### add predicted values (and corresponding CI bounds)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$pred)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.lb, lty="dashed")
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.ub, lty="dashed")
+
+dev.off()
+
+
+##### Large 
+png(filename = "Plots/ScatterPlotLarge.png",width = 800, height = 500, units = "p")
+# PLOT values   
+samplingVar <- dat$samplingVarLarge_Mean
+values <- dat$estLargeMean
+## Model with unstandardised years for plotting
+res <- rma.mv(yi = values, V = samplingVar, random = ~ 1 | id, mods = YearsStudiedMean,  data = dat, slab = StudyName)
+### calculate predicted risk ratios for 0 to 60 degrees absolute latitude
+preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+
+### calculate point sizes by rescaling the standard errors
+wi    <- 1/sqrt(samplingVar)
+size  <- 0.5 + 3.0 * (wi - min(wi, na.rm = T))/(max(wi, na.rm = T) - min(wi, na.rm = T))
+
+### plot the risk ratios against absolute latitude
+plot(dat$YearsStudiedMean[!is.na(samplingVar)], values[!is.na(samplingVar)], pch=19, cex=size, 
+     xlab="Year", ylab="Power at Large Benchmark", ylim = c(0,1),
+     las=1, bty="l")
+
+### add predicted values (and corresponding CI bounds)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$pred)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.lb, lty="dashed")
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.ub, lty="dashed")
+dev.off()
+
+
+
+
+
+
+
+
+
 
 
 ### VERSION WITH AREA OF RESEARCH 
-
 par(mar=c(4,4,1,2), font = 1)
 forest(resMedMean, xlim=c(-.65, 1.15), at = c(0,.25, .5, .75, 1), ilab = data.frame(dat$YearsStudied, dat$SubfieldClassification),
        ilab.xpos=c(-.04, -.26), cex=0.75, ylim=c(-1, length(dat$id)+3),
        xlab="Estimated power", mlab="", addfit = T, showweights = F)
-
-
 
 text(-.6, -1, pos=4, cex=0.75, bquote(paste("REML Model for All Studies (Q = ",
                                             .(formatC(resMedMean$QE, digits=2, format="f")), ", df = ", .(resMedMean$k - resMedMean$p),
@@ -529,25 +797,16 @@ par(font=1)
 
 
 
-
-
-
-
-
-
 par(mar=c(4,4,1,2))
 
 ### fit random-effects model (use slab argument to define study labels)
 res <- rma(ai=tpos, bi=tneg, ci=cpos, di=cneg, data=dat.bcg, measure="RR",
            slab=paste(author, year, sep=", "), method="REML")
-
-
 forest(res, xlim=c(-16, 6), at=log(c(0.05, 0.25, 1, 4)), atransf=exp,
        ilab=cbind(dat.bcg$tpos, dat.bcg$tneg, dat.bcg$cpos, dat.bcg$cneg),
        ilab.xpos=c(-9.5,-8,-6,-4.5), cex=0.75, ylim=c(-1, 27),
        order=order(dat.bcg$alloc), rows=c(3:4,9:15,20:23),
        xlab="Risk Ratio", mlab="", psize=1)
-
 
 text(-16, -1, pos=4, cex=0.75, bquote(paste("RE Model for All Studies (Q = ",
                                             .(formatC(res$QE, digits=2, format="f")), ", df = ", .(res$k - res$p),
@@ -576,16 +835,11 @@ text(6,                  26, "Risk Ratio [95% CI]", pos=2)
 par(op)
 
 
-
-
-
-
-
 forest(resMedNoImpMLYear)
 forest(resMedMeanMLYear)
 
 
-# PLOT median 
+# PLOT medium  
 samplingVar <- dat$samplingVarMed_Mean
 values <- dat$estMedMean
 ## Model with unstandardised years for plotting
@@ -637,10 +891,6 @@ lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.u
 
 
 
-
-
-
-
 #### CHECKING THAT THERE ARE NO DISCREPANCIES IN COEFFICENT VALUES DEPENDING ON IMPUTATION METHOD #### 
 max(unlist(c(c(resMedMax[[1]], resMedMin[[1]], resMedMed[[1]]) - c(resMedMean[[1]]),
              c(resMedMaxML[[1]], resMedMinML[[1]], resMedMedML[[1]]) - c(resMedMeanML[[1]]),
@@ -659,9 +909,6 @@ max(unlist(c(c(resLargeMax[[1]], resLargeMin[[1]], resLargeMed[[1]]) - c(resLarg
 resSmallNoImpMLYear; resSmallMeanMLYear
 resMedNoImpMLYear; resMedMeanMLYear
 resLargeNoImpMLYear; resLargeMeanMLYear
-
-
-
 
 
 

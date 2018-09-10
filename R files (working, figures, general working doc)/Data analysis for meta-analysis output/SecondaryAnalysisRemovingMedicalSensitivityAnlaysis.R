@@ -3,7 +3,7 @@
 #library(metafor); library(readxl)
 
 # Importing data - you will need to replace this file path with the file path to the file from https://osf.io/gpvbq/
-dataSetOri <- read_excel("PhD/Systematic Reviews/History of Power Estimation Studies/SecondaryAnalysisData2018.03.25.xlsx", 
+dataSetOri <- read_excel("SecondaryAnalysisData2018.03.25.xlsx", 
                          sheet = "Data_prop_reporting_PA")
 dataSetOri <-as.data.frame(dataSetOri)
 
@@ -74,7 +74,7 @@ text(-.8, 25, "Study",               pos=4)
 text( 1.5, 25, "Proportion [95% CI]", pos=2)
 
 #### Random effects meta analysis including median year as a moderator, comparing with FEMA below #####
-res1 <- rma(yi, vi, method="FE", data=dat, mods = medianYear)
+res1 <- rma(yi, vi, method="REML", data=dat, mods = medianYear)
 pred1 <- predict(res1, transf=transf.ipft.hm, targs=list(ni=dat$NumberOfArticlesExamined))
 pred1
 
