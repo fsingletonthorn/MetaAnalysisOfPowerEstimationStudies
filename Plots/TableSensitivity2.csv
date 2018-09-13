@@ -1,7 +1,7 @@
 "","intrcpt","as.numeric.YearsStudiedMean...mean.YearsStudiedMean..","intrcpt.1","as.numeric.YearsStudiedMean...mean.YearsStudiedMean...1","intrcpt.2","as.numeric.YearsStudiedMean...mean.YearsStudiedMean...2"
-"resSmallMeanMLYear.b",0.227,-0.001,0.62,-0.002,0.833,-0.001
-"smallWeightedYear.b",0.23,-0.001,0.624,-0.002,0.838,-0.003
-"resSmallNoImpMLYear.b",0.217,-0.002,0.582,-0.003,0.818,-0.002
-"resSmallMaxMLYear.b",0.226,-0.001,0.618,-0.002,0.832,-0.001
-"resSmallMinMLYear.b",0.228,-0.001,0.621,-0.002,0.832,-0.001
-"resSmallMedMLYear.b",0.228,-0.001,0.621,-0.002,0.832,-0.001
+"resSmallMeanMLYear.b",0.229,-0.001,0.62,-0.002,0.834,-0.001
+"smallWeightedYear.b",0.232,-0.001,0.624,-0.002,0.84,-0.003
+"resSmallNoImpMLYear.b",0.22,-0.002,0.582,-0.003,0.819,-0.002
+"resSmallMaxMLYear.b",0.228,-0.001,0.618,-0.002,0.833,-0.001
+"resSmallMinMLYear.b",0.23,-0.001,0.621,-0.002,0.835,-0.001
+"resSmallMedMLYear.b",0.229,-0.001,0.621,-0.002,0.834,-0.001

@@ -3,16 +3,14 @@
 #library(metafor); library(readxl)
 
 # Importing data - you will need to replace this file path with the file path to the file from https://osf.io/gpvbq/
-dataSetOri <- read_excel("PhD/Systematic Reviews/History of Power Estimation Studies/SecondaryAnalysisData2018.03.25.xlsx", 
+dataSetOri <- read_excel("SecondaryAnalysisData2018.03.25.xlsx", 
                          sheet = "Data_prop_reporting_PA")
 dataSetOri <-as.data.frame(dataSetOri)
-
 dataSet  <- dataSetOri
 
 ############# Data cleaning ############ 
 
 ### replace year data with median year ###
-
 #extract years vector for easy use
 years<-dataSet$YearsStudied
 # Extract just those studies that cover 1 year (produces warning, as studies which cover ranges are changed to NAs)
@@ -45,43 +43,64 @@ dat <- dat[order(dat$medianYear),]
 
 ################### meta analysis ##################
 # Transfrom proportion of successes to number of successes and save as xi (rounding to estimate number of articles, most proportions are correct the ~ 6 decimal or so, so the value will be exact, only McKeown, Andrew, Jennifer S. Gewandter, Michael P. McDermott, Joseph R. Pawlowski, Joseph J. Poli, Daniel Rothstein, John T. Farrar, et al. "Reporting of Sample Size Calculations in Analgesic Clinical Trials: Acttion Systematic Review." The Journal of Pain 16, no. 3 2015 could be a problem, and that's only by 1 success in either direction)
-dat$xi<-round(dat$ProportionReportingPA * dat$NumberOfArticlesExamined)
+dat$xi <- round(dat$ProportionReportingPA * dat$NumberOfArticlesExamined)
 
 ## DOUBLE ARCSINE TRANSFORM of number of articles, which should make the sampling distribution more normal - xi = number of "sucesses", ni = number sampled total (dat$NumberOfArticlesExamined)
 # See Miller, J. J. (1978). The Inverse of the Freeman - Tukey Double Arcsine Transformation. The American Statistician, 32(4), 138-138. doi:10.1080/00031305.1978.10479283 for details about the transformation, the formula used is the same, except that there is a multiplicative constant of .5 (accounted for in the transformation and back-transformation)
 # The TF double arcsine transformation is used to normalie and variance-stabilise the sampling distribution of proportions
-dat <-escalc(measure="PFT",xi=xi,ni=NumberOfArticlesExamined, data=dat)
+dat <- escalc(measure="PFT",xi=xi,ni=NumberOfArticlesExamined, data=dat)
 
 #### Random effects meta analysis used, restricted maximum-likelihood estimator
 res <- rma(yi, vi, method="REML", data=dat)
 pred <- predict(res, transf=transf.ipft.hm, targs=list(ni=dat$NumberOfArticlesExamined))
 pred
 
+#### Random effects meta analysis including median year as a moderator #####
+resSimple <- rma(yi, vi, method="REML", data=dat, mods = medianYear-mean(medianYear))
+predSimple <- predict(resSimple, transf=transf.ipft.hm, targs=list(ni=dat$NumberOfArticlesExamined))
+
+#### Random effects meta analysis including median year as a moderator, final model #####
+res1 <- rma.mv(yi, vi, method="REML", random = list(~ PaperCitation, ~ SubfieldClassification), data=dat, mods = medianYear-mean(medianYear))
+pred0 <- predict(res1, 0, transf=transf.ipft.hm, targs=list(ni=dat$NumberOfArticlesExamined))
+
 # back transform, yi = doub arcsin transformed value 
 dat.back <- summary(dat, transf=transf.ipft, ni=dat$NumberOfArticlesExamined)
 
+# Retitleing for visulisation 
+dat.back$SubfieldClassification[dat.back$SubfieldClassification == "Neurocog"] <- "Neuropsychology"
+dat.back$SubfieldClassification[dat.back$SubfieldClassification == "Management research"] <- "Management/IO"
+
+#### plots #### 
+png(filename = "Plots/SecondaryAnalysisForest.png",width = 950, height = 500, units = "p")
 # forest plot with back transformed variables
 forest(dat.back$yi, ci.lb=dat.back$ci.lb, ci.ub=dat.back$ci.ub, psize=1,
-       xlim=c(-1.2,1.7), alim=c(0,1), ylim=c(-1.1,23.7), refline=NA, digits=3L, xlab="Proportion of studies reporting a power analysis", slab = dat.back$PaperCitation)
-addpoly(pred$pred, ci.lb=pred$ci.lb, ci.ub=pred$ci.ub, row=-0.5, digits=3, mlab="REML Model", efac=1.3)
+       ilab = data.frame(dat.back$YearsStudied,  dat.back$SubfieldClassification), ilab.xpos = c(-.2, -.65),
+       xlim=c(-1.82,1.45), alim=c(0,1), ylim=c(-1.1,23.7), refline=NA, digits=3L, xlab="Proportion of studies reporting a power analysis", slab = dat.back$PaperCitation, cex = 1.4)
+addpoly(pred0$pred, ci.lb=pred0$ci.lb[1], ci.ub=pred0$ci.ub[1], row=-0.5, digits=3, mlab="", cex = 1.4)
 abline(h=0.4)
-text(-1.2, 23, "Study",               pos=4)
-text( 1.7, 23, "Proportion [95% CI]", pos=2)
 
-#### Random effects meta analysis including median year as a moderator #####
-res1 <- rma(yi, vi, method="REML", data=dat, mods = medianYear-mean(medianYear))
+text(-1.82, 23, "Study",               pos=4, cex = 1.4)
+text(-.4, 23, "Years sampled",               pos=4, cex = 1.4)
+text( 1.45, 23, "Proportion [95% CI]", pos=2, cex = 1.4)
+dev.off()
+
 pred1 <- predict(res1, transf=transf.ipft.hm, targs=list(ni=dat$NumberOfArticlesExamined))
 pred1
-
+png(filename = "Plots/SecondaryAnalysisScatter.png",width = 950, height = 500, units = "p")
 # Ploting proportion by year
 # a scatterplot of the data, a line (or rather: curve after the back-transformation) with the estimated average proportion of studies reporting a power analysis by years
 # weighting size of dots by standard error
 cexs <- 1/dat$vi
 cexs <- 1 + (cexs - min(cexs)) / (max(cexs) - min(cexs))
 #plotting predicted proportion on year, with points size weighted by standard error
-plot(NA, NA, xlab="Year", ylab="Proportion of studies reporting a power analysis", xlim=c(min(dat$medianYear),max(dat$medianYear)), ylim=c(0,1), bty="l")
+plot(NA, NA, xlab="Year", ylab="Proportion of studies reporting a power analysis", xlim=c(min(dat$medianYear),max(dat$medianYear)), ylim=c(0,1), bty="l", cex.lab = 1.4)
 lines(dat$medianYear, pred1$ci.lb, col="darkgray",  lty = "dashed",  lwd=2)
 # Upper and lower CIs
 lines(dat$medianYear, pred1$ci.ub, col="darkgray", lty = "dashed", lwd=2)
 lines(dat$medianYear, pred1$pred, col="darkgray", lwd=2)
 points(dat$medianYear, transf.ipft(dat$yi,dat$NumberOfArticlesExamined), pch=19, cex=cexs)
+dev.off()
+
+## Profile plots
+profile(res1)
+

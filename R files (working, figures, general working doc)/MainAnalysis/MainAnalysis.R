@@ -1,6 +1,6 @@
 # packages 
 library(readxl)
-library(metafor)
+library('metafor')
 library(tidyverse)
 library(stringr)
 
@@ -139,14 +139,19 @@ length(unique(dat$id[(is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT)
 # “clinical psychology/psychiatry”, “social/personality”, “education”, “general psychology” (i.e., those studies which look across fields of psychology research), “management/IO psychology”, “cognitive psychology” “neuropsychology”, “meta-analysis”
 unique(dat$SubfieldClassification)
 
-dat$SubfieldClassification[dat$SubfieldClassification == "Cognitive neuroscience, psychology, psychiatry"] <- "clinical psychology/psychiatry"
-dat$SubfieldClassification[dat$SubfieldClassification == "Clinical"] <- "clinical psychology/psychiatry"
+dat$SubfieldClassification[dat$SubfieldClassification == "Cognitive neuroscience, psychology, psychiatry"] <- "General Psychology"
+dat$SubfieldClassification[dat$SubfieldClassification == "Clinical"] <- "Clinical Psychology/Psychiatry"
 dat$SubfieldClassification[dat$SubfieldClassification == "Neuroscience"] <- "Neuropsychology"
 dat$SubfieldClassification[dat$SubfieldClassification == "Medical Education"] <- "Education"
 
 ## Counting articles with sample size reported
 sum(!is.na(dat$SampleMean))
 
+# removing cohen at large and small effect sizes
+dat$PowerAtSmallEffectMedian[dat$id==103] <- NA
+dat$PowerAtLargeEffectMedian[dat$id==103] <- NA
+dat$PowerAtSmallEffectMean[dat$id==103] <- NA
+dat$PowerAtLargeEffectMean[dat$id==103] <- NA
 
 #### Estimating missing parameters ####
 ###### Estimating Small var and sd
@@ -358,8 +363,7 @@ resSmallNoImpML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_NoImputedD
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallNoImpMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-
-
+resSmallNoImpMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_NoImputedData, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 # Medium 
 #### Most basic model ####
@@ -369,6 +373,7 @@ resMedNoImpML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_NoImputedData, r
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedNoImpMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
+resMedNoImpMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_NoImputedData, random =  list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 # Large
 # No ML
@@ -377,6 +382,8 @@ resLargeNoImp <- rma(yi = estLargeMean, vi = samplingVarLarge_NoImputedData,  da
 resLargeNoImpML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_NoImputedData, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeNoImpMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research  
+resLargeNoImpMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 # Running analyses with imputed data, this time with mean imputation. These are the main results in the paper. 
@@ -389,10 +396,7 @@ resMedMeanML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMeanMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + as.numeric(YearsStudiedMean - mean(YearsStudiedMean))| SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
-
-
-
+resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
 
 
 ## same models with median imputation
@@ -403,6 +407,9 @@ resMedMedML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Med, random = ~ 1 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMedMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
+resMedMedMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
 
 
 
@@ -413,6 +420,9 @@ resMedMin <- rma(yi = estMedMean, vi = samplingVarMed_Min,  data = dat, method =
 resMedMinML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Min, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMinMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+resMedMinMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Min, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
 
 ## same models with max imputation 
 #### Most basic model ####
@@ -421,8 +431,8 @@ resMedMax <- rma(yi = estMedMean, vi = samplingVarMed_Max,  data = dat, method =
 resMedMaxML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Max, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMaxMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random = ~ (1 | id), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
-
-
+######## model accounting for area of research 
+resMedMaxMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 #### SMALL EFFECT SIZE BENCHMARK
@@ -433,6 +443,9 @@ resSmallMean <- rma(yi = estSmallMean, vi = samplingVarSmall_Mean,  data = dat, 
 resSmallMeanML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | id,  data = dat, slab=StudyName)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallMeanMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+######## model accounting for area of research 
+resSmallMeanMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+
 
 ## same models with median imputation
 #### Most basic model ####
@@ -441,6 +454,10 @@ resSmallMed <- rma(yi = estSmallMean, vi = samplingVarSmall_Med,  data = dat, me
 resSmallMedML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Med, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallMedMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+resSmallMedMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Med, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
 
 ## same models with min imputation 
 #### Most basic model ####
@@ -449,6 +466,10 @@ resSmallMin <- rma(yi = estSmallMean, vi = samplingVarSmall_Min,  data = dat, me
 resSmallMinML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Min, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallMinMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+resSmallMinMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Min, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
 
 ## same models with max imputation 
 #### Most basic model ####
@@ -457,12 +478,12 @@ resSmallMax <- rma(yi = estSmallMean, vi = samplingVarSmall_Max,  data = dat, me
 resSmallMaxML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Max, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallMaxMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Max, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
-
+######## model accounting for area of research 
+resSmallMaxMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Max, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 #### LARGE EFFECT SIZE BENCHMARK
-# Models with means 
-
+# Models with mean imputation
 dat$samplingVarLarge_Mean
 #### Most basic model ####
 resLargeMean <- rma(yi = estLargeMean, vi = samplingVarLarge_Mean,  data = dat, method = "REML", slab=StudyName)
@@ -470,6 +491,10 @@ resLargeMean <- rma(yi = estLargeMean, vi = samplingVarLarge_Mean,  data = dat, 
 resLargeMeanML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | id,  data = dat, slab=StudyName)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMeanMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+######## model accounting for area of research 
+resLargeMeanMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+
+
 
 ## same models with median imputation
 #### Most basic model ####
@@ -478,6 +503,10 @@ resLargeMed <- rma(yi = estLargeMean, vi = samplingVarLarge_Med,  data = dat, me
 resLargeMedML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Med, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMedMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+resLargeMedMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Med, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
 
 ## same models with min imputation 
 #### Most basic model ####
@@ -486,6 +515,11 @@ resLargeMin <- rma(yi = estLargeMean, vi = samplingVarLarge_Min,  data = dat, me
 resLargeMinML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Min, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMinMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+resLargeMinMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Min, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
+
 
 ## same models with max imputation 
 #### Most basic model ####
@@ -494,6 +528,8 @@ resLargeMax <- rma(yi = estLargeMean, vi = samplingVarLarge_Max,  data = dat, me
 resLargeMaxML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Max, random = ~ 1 | id,  data = dat)
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMaxMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+######## model accounting for area of research 
+resLargeMaxMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 #### Sensititivty analysis ####
@@ -501,34 +537,38 @@ resLargeMaxMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, random 
 mediumWeighted <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | id,  data = dat, slab=StudyName, W = dat$NumberOfArticles)
 smallWeighted <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | id,  data = dat, slab=StudyName, W = dat$NumberOfArticles)
 largeWeighted <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | id,  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+######## model accounting for area of research 
 
 ## Estimating differences caused by weigting by number of studies 
 mediumWeighted$b - resMedMeanML$b
 smallWeighted$b - resSmallMeanML$b
 largeWeighted$b - resLargeMeanML$b
 
+
 # Estimating these with added year 
 mediumWeightedYear <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
 smallWeightedYear <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
 largeWeightedYear <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
 
+
+# Estimating these with added year and field of research 
+mediumWeightedYearField <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+smallWeightedYearField <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+largeWeightedYearField <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+
+
 ## Estimating differences caused by weigting by number of studies 
-mediumWeightedYear$b - resMedMeanMLYear$b
-smallWeightedYear$b - resSmallMeanMLYear$b
-largeWeightedYear$b - resLargeMeanMLYear$b
+mediumWeightedYearField$b - resMedMeanMLYearField$b
+smallWeightedYearField$b - resSmallMeanMLYearField$b
+largeWeightedYearField$b - resLargeMeanMLYearField$b
+
 
 #### Differences with imputation or not ####
-
-
 ## Estimating differences caused by data imputation 
-resSmallNoImpML$b - resSmallMeanML$b
-resMedNoImpML$b - resMedMeanML$b
-resLargeNoImpML$b - resLargeMeanML$b
+resSmallNoImpMLYearField$b - resSmallMeanMLYearField$b
+resMedNoImpMLYearField$b - resMedMeanMLYearField$b
+resLargeNoImpMLYearField$b - resLargeMeanMLYearField$b
 
-## Estimating differences caused by data imputation 
-resSmallNoImpMLYear$b - resSmallMeanMLYear$b
-resMedNoImpMLYear$b - resMedMeanMLYear$b
-resLargeNoImpMLYear$b - resLargeMeanMLYear$b
 
 # making tables for easy demostrations of the different values
 smallModels <- t(data.frame(resSmallMeanML$b,
@@ -537,7 +577,7 @@ smallModels <- t(data.frame(resSmallMeanML$b,
                           resSmallMaxML$b,
                           resSmallMinML$b,
                           resSmallMedML$b))
-  
+
 mediumModels <- t(data.frame(resMedMeanML$b, 
                             mediumWeighted$b,
                              resMedNoImpML$b,
@@ -554,8 +594,9 @@ largeModels <- t(data.frame(resLargeMeanML$b,
                             resLargeMedML$b)) 
 
 SensitivityAnalysis<- data.frame(smallModels, mediumModels, largeModels)
-# write.csv(round(SensitivityAnalysis, 3), file = "Plots/TableSensitivity1.csv")
+write.csv(round(SensitivityAnalysis, 3), file = "Plots/TableSensitivity1.csv")
 
+# sensitivity analyses output for models w/ year and no field REs 
 
 smallModelsYear <- t(data.frame(resSmallMeanMLYear$b,
                             smallWeightedYear$b,
@@ -575,34 +616,205 @@ largeModelsYear <- t(data.frame(resLargeMeanMLYear$b,
                             largeWeightedYear$b,
                             resLargeNoImpMLYear$b,
                             resLargeMaxMLYear$b,
-                            resLargeMaxMLYear$b,
-                            resLargeMaxMLYear$b)) 
+                            resLargeMinMLYear$b,
+                            resLargeMedMLYear$b)) 
 SensitivityAnalysisYear<- data.frame(smallModelsYear, mediumModelsYear, largeModelsYear)
-write.csv(round(SensitivityAnalysisYear, 3), file = "Plots/TableSensitivity2.csv")
+ write.csv(round(SensitivityAnalysisYear, 3), file = "Plots/TableSensitivity2.csv")
 
 
+### Sensitivity analysis output for final model 
 
-###### Adding area of psychology rearach as a moderator
+smallModelsYearField <- t(data.frame(resSmallMeanMLYearField$b,
+                                smallWeightedYearField$b,
+                                resSmallNoImpMLYearField$b,
+                                resSmallMaxMLYearField$b,
+                                resSmallMinMLYearField$b,
+                                resSmallMedMLYearField$b))
+
+mediumModelsYearField <- t(data.frame(resMedMeanMLYearField$b, 
+                                 mediumWeightedYearField$b,
+                                 resMedNoImpMLYearField$b,
+                                 resMedMaxMLYearField$b,
+                                 resMedMinMLYearField$b,
+                                 resMedMedMLYearField$b))
+
+largeModelsYearField <- t(data.frame(resLargeMeanMLYearField$b, 
+                                largeWeightedYearField$b,
+                                resLargeNoImpMLYearField$b,
+                                resLargeMaxMLYearField$b,
+                                resLargeMinMLYearField$b,
+                                resLargeMedMLYearField$b)) 
+SensitivityAnalysisYearField<- data.frame(smallModelsYearField, mediumModelsYearField, largeModelsYearField)
+write.csv(round(SensitivityAnalysisYearField, 3), file = "Plots/TableSensitivity3.csv")
+
+# max change from different imputation methods 
+max(data.frame(resLargeMaxMLYearField$b, resLargeMinMLYearField$b, resLargeMedMLYearField$b) - data.frame(resLargeMeanMLYearField$b,resLargeMeanMLYearField$b,resLargeMeanMLYearField$b))
+max(data.frame(resSmallMaxMLYearField$b, resSmallMinMLYearField$b, resSmallMedMLYearField$b) - data.frame(resSmallMeanMLYearField$b,resSmallMeanMLYearField$b,resSmallMeanMLYearField$b))
+max(data.frame(resMedMaxMLYearField$b, resMedMinMLYearField$b, resMedMedMLYearField$b) - data.frame(resMedMeanMLYearField$b,resMedMeanMLYearField$b,resMedMeanMLYearField$b))
 
 
-
-
-
-
-
+## Checking what happens if we include the two .99s with minimum variances 
+######## model accounting for area of research 
+dat$samplingVarLarge_Mean
+resLargeMeanMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
 
 
 
 
 
 ####### Plots #######
-forest(resLargeMeanML)
-qqnorm(resMedNoImp)
-funnel(resLargeMin)
-
-##### PLOTS #### 
 # Plot forest plot medium benchmark (mean imputation)
-png(filename = "Plots/ForestPlotMedium.png",width = 900, height = 1100, units = "p")
+png(filename = "Plots/ForestPlotMedium.png",width = 950, height = 1200, units = "p")
+par(mar=c(4,4,1,2), font = 1)
+res <- resMedMeanMLYearField
+forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1),
+       ilab = data.frame(dat$YearsStudied, dat$SubfieldClassification),
+       ilab.xpos=c(-.16, -.58), cex=1.1, ylim=c(-1, length(dat$id)+3),
+       xlab="Estimated power", mlab="", addfit = F, showweights = F)
+
+
+  addpoly(x =  res$b[1], ci.lb = res$ci.lb[1], ci.ub = res$ci.ub[1], cex = 1.1)
+
+# Bold font 
+par(font=2)
+### add column headings to the plot
+text(-1.3, length(dat$id)+2, c("Author(s) (year)"), cex = 1.25)
+text(-.58, length(dat$id)+2, c("Subfield"), cex = 1.25)
+text(-.18, length(dat$id)+2, c("Years sampled"), cex = 1.25)
+# normal font 
+par(font=1)
+dev.off()
+
+
+# Plot forest plot small benchmark (mean sd imputation)
+res <- resSmallMeanMLYearField
+png(filename = "Plots/ForestPlotSmall.png",width = 950, height = 1200, units = "p")
+par(mar=c(4,4,1,2), font = 1)
+forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1),
+       ilab = data.frame(dat$YearsStudied, dat$SubfieldClassification),
+       ilab.xpos=c(-.16, -.58), cex=1.1, ylim=c(-1, length(dat$id)+3),
+       xlab="Estimated power", mlab="", addfit = F, showweights = F)
+
+
+addpoly(x =  res$b[1], ci.lb = res$ci.lb[1], ci.ub = res$ci.ub[1], cex = 1.1)
+
+# Bold font 
+par(font=2)
+### add column headings to the plot
+text(-1.3, length(dat$id)+2, c("Author(s) (year)"), cex = 1.25)
+text(-.58, length(dat$id)+2, c("Subfield"), cex = 1.25)
+text(-.18, length(dat$id)+2, c("Years sampled"), cex = 1.25)
+# normal font 
+par(font=1)
+dev.off()
+
+
+# Plot forest plot large benchmark (mean sd imputation)
+res <- resLargeMeanMLYearField
+png(filename = "Plots/ForestPlotLarge.png",width = 950, height = 1200, units = "p")
+par(mar=c(4,4,1,2), font = 1)
+forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1),
+       ilab = data.frame(dat$YearsStudied, dat$SubfieldClassification),
+       ilab.xpos=c(-.16, -.58), cex=1.1, ylim=c(-1, length(dat$id)+3),
+       xlab="Estimated power", mlab="", addfit = F, showweights = F)
+
+
+addpoly(x =  res$b[1], ci.lb = res$ci.lb[1], ci.ub = res$ci.ub[1], cex = 1.1)
+
+# Bold font 
+par(font=2)
+### add column headings to the plot
+text(-1.3, length(dat$id)+2, c("Author(s) (year)"), cex = 1.25)
+text(-.58, length(dat$id)+2, c("Subfield"), cex = 1.25)
+text(-.18, length(dat$id)+2, c("Years sampled"), cex = 1.25)
+# normal font 
+par(font=1)
+dev.off()
+
+
+#### Plots of change over time 
+
+##### Small 
+png(filename = "Plots/ScatterPlotSmall.png",width = 800, height = 500, units = "p")
+# PLOT medium  
+samplingVar <- dat$samplingVarSmall_Mean
+values <- dat$estSmallMean
+## Model with unstandardised years for plotting
+res <-  rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ YearsStudiedMean,  data = dat)
+### calculate predicted risk ratios for 0 to 60 degrees absolute latitude
+preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+
+### calculate point sizes by rescaling the standard errors
+wi    <- 1/sqrt(samplingVar)
+size  <- 0.5 + 3.0 * (wi - min(wi, na.rm = T))/(max(wi, na.rm = T) - min(wi, na.rm = T))
+
+### plot the risk ratios against absolute latitude
+plot(dat$YearsStudiedMean[!is.na(samplingVar)], values[!is.na(samplingVar)], pch=19, cex=size, 
+     xlab="Year", ylab="Power at Small Benchmark", ylim = c(0,1),
+     las=1, bty="l")
+
+### add predicted values (and corresponding CI bounds)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$pred)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.lb, lty="dashed")
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.ub, lty="dashed")
+dev.off()
+
+##### Medium 
+png(filename = "Plots/ScatterPlotMedium.png",width = 800, height = 500, units = "p")
+# PLOT medium  
+samplingVar <- dat$samplingVarMed_Mean
+values <- dat$estMedMean
+## Model with unstandardised years for plotting
+res <- rma.mv(yi = values, V = samplingVar, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ YearsStudiedMean,  data = dat)
+### calculate predicted risk ratios for 0 to 60 degrees absolute latitude
+preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+
+### calculate point sizes by rescaling the standard errors
+wi    <- 1/sqrt(samplingVar)
+size  <- 0.5 + 3.0 * (wi - min(wi, na.rm = T))/(max(wi, na.rm = T) - min(wi, na.rm = T))
+
+### plot the risk ratios against absolute latitude
+plot(dat$YearsStudiedMean[!is.na(samplingVar)], dat$estMedMean[!is.na(samplingVar)], pch=19, cex=size, 
+     xlab="Year", ylab="Power at Medium Benchmark", ylim = c(0,1),
+     las=1, bty="l")
+
+### add predicted values (and corresponding CI bounds)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$pred)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.lb, lty="dashed")
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.ub, lty="dashed")
+dev.off()
+
+
+##### Large 
+png(filename = "Plots/ScatterPlotLarge.png",width = 800, height = 500, units = "p")
+# PLOT values   
+samplingVar <- dat$samplingVarLarge_Mean
+values <- dat$estLargeMean
+## Model with unstandardised years for plotting
+res <- rma.mv(yi = values, V = samplingVar, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ YearsStudiedMean,  data = dat)
+### calculate predicted risk ratios for 0 to 60 degrees absolute latitude
+preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+
+### calculate point sizes by rescaling the standard errors
+wi    <- 1/sqrt(samplingVar)
+size  <- 0.5 + 3.0 * (wi - min(wi, na.rm = T))/(max(wi, na.rm = T) - min(wi, na.rm = T))
+
+### plot the risk ratios against absolute latitude
+plot(dat$YearsStudiedMean[!is.na(samplingVar)], values[!is.na(samplingVar)], pch=19, cex=size, 
+     xlab="Year", ylab="Power at Large Benchmark", ylim = c(0,1),
+     las=1, bty="l")
+
+### add predicted values (and corresponding CI bounds)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$pred)
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.lb, lty="dashed")
+lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.ub, lty="dashed")
+dev.off()
+
+
+
+##### PLOTS for sensitivity analysis #### 
+# Plot forest plot medium benchmark (mean imputation)
+png(filename = "Plots/ForestPlotMediumSimple.png",width = 900, height = 1100, units = "p")
 par(mar=c(4,4,1,2), font = 1)
 forest(resMedMean, xlim=c(-.8, 1.3), at = c(0,.25, .5, .75, 1),
        ilab = data.frame(dat$YearsStudied),
@@ -629,7 +841,7 @@ dev.off()
 
 # Plot forest plot small benchmark (mean sd imputation)
 res <- resSmallMean
-png(filename = "Plots/ForestPlotSmall.png",width = 900, height = 1100, units = "p")
+png(filename = "Plots/ForestPlotSmallSimple.png",width = 900, height = 1100, units = "p")
 par(mar=c(4,4,1,2), font = 1)
 forest(res, xlim=c(-.8, 1.3), at = c(0,.25, .5, .75, 1),
        ilab = data.frame(dat$YearsStudied),
@@ -656,7 +868,7 @@ dev.off()
 
 # Plot forest plot large benchmark (mean sd imputation)
 res <- resLargeMean
-png(filename = "Plots/ForestPlotLarge.png",width = 900, height = 1100, units = "p")
+png(filename = "Plots/ForestPlotLargeSimple.png",width = 900, height = 1100, units = "p")
 par(mar=c(4,4,1,2), font = 1)
 forest(res, xlim=c(-.8, 1.3), at = c(0,.25, .5, .75, 1),
        ilab = data.frame(dat$YearsStudied),
@@ -709,10 +921,8 @@ lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.l
 lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.ub, lty="dashed")
 dev.off()
 
-
-
 ##### Medium 
-png(filename = "Plots/ScatterPlotMedium.png",width = 800, height = 500, units = "p")
+png(filename = "Plots/ScatterPlotMediumSimple.png",width = 800, height = 500, units = "p")
 # PLOT medium  
 samplingVar <- dat$samplingVarMed_Mean
 values <- dat$estMedMean
@@ -737,9 +947,12 @@ lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.u
 
 dev.off()
 
+mean(dat$samplingVarMed_Mean)
+mean(dat$samplingVarLarge_Mean)
+
 
 ##### Large 
-png(filename = "Plots/ScatterPlotLarge.png",width = 800, height = 500, units = "p")
+png(filename = "Plots/ScatterPlotLargeSimple.png",width = 800, height = 500, units = "p")
 # PLOT values   
 samplingVar <- dat$samplingVarLarge_Mean
 values <- dat$estLargeMean
@@ -808,34 +1021,8 @@ forest(res, xlim=c(-16, 6), at=log(c(0.05, 0.25, 1, 4)), atransf=exp,
        order=order(dat.bcg$alloc), rows=c(3:4,9:15,20:23),
        xlab="Risk Ratio", mlab="", psize=1)
 
-text(-16, -1, pos=4, cex=0.75, bquote(paste("RE Model for All Studies (Q = ",
-                                            .(formatC(res$QE, digits=2, format="f")), ", df = ", .(res$k - res$p),
-                                            ", p = ", .(formatC(res$QEp, digits=2, format="f")), "; ", I^2, " = ",
-                                            .(formatC(res$I2, digits=1, format="f")), "%)")))
 
-### set font expansion factor (as in forest() above) and use bold italic
-### font and save original settings in object 'op'
-op <- par(cex=0.75, font=4)
-
-### add text for the subgroups
-text(-16, c(24,16,5), pos=4, c("Systematic Allocation",
-                               "Random Allocation",
-                               "Alternate Allocation"))
-
-### switch to bold font
-par(font=2)
-
-### add column headings to the plot
-text(c(-9.5,-8,-6,-4.5), 26, c("TB+", "TB-", "TB+", "TB-"))
-text(c(-8.75,-5.25),     27, c("Vaccinated", "Control"))
-text(-16,                26, "Author(s) and Year",  pos=4)
-text(6,                  26, "Risk Ratio [95% CI]", pos=2)
-
-### set par back to the original settings
-par(op)
-
-
-forest(resMedNoImpMLYear)
+forest(resMedNoImpMLYear, addfit = F)
 forest(resMedMeanMLYear)
 
 
@@ -847,8 +1034,6 @@ res <- rma.mv(yi = values, V = samplingVar, random = ~ 1 | id, mods = YearsStudi
 ### calculate predicted risk ratios for 0 to 60 degrees absolute latitude
 preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
 
-# forest
-forest(res)
 
 ### calculate point sizes by rescaling the standard errors
 wi    <- 1/sqrt(dat$samplingVarMed_NoImputedData)
@@ -889,26 +1074,52 @@ lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$pred
 lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.lb, lty="dashed")
 lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.ub, lty="dashed")
 
+## Model diagnostics #### 
+l1OutSlopeS <-  rep(NA, length(dat$id))
+l1OutSlopeM <-  rep(NA, length(dat$id))
+l1OutSlopeL <-  rep(NA, length(dat$id))
 
+l1OutInterceptS <- rep(NA, length(dat$id))
+l1OutInterceptM <- rep(NA, length(dat$id))
+l1OutInterceptL <- rep(NA, length(dat$id))
 
-#### CHECKING THAT THERE ARE NO DISCREPANCIES IN COEFFICENT VALUES DEPENDING ON IMPUTATION METHOD #### 
-max(unlist(c(c(resMedMax[[1]], resMedMin[[1]], resMedMed[[1]]) - c(resMedMean[[1]]),
-             c(resMedMaxML[[1]], resMedMinML[[1]], resMedMedML[[1]]) - c(resMedMeanML[[1]]),
-             data.frame(resMedMaxMLYear[[1]], resMedMinMLYear[[1]], resMedMedMLYear[[1]]) - data.frame(resMedMeanMLYear[[1]], resMedMeanMLYear[[1]], resMedMeanMLYear[[1]]))))
+# Leave one our cv 
+for(i in 1:length(dat$id)) {
+  tempS <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat[-which(dat$id==dat$id[i])])
+  tempM <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName, data = dat[-which(dat$id == dat$id[i])])
+  tempL <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat[-which(dat$id == dat$id[i])])
+  l1OutSlopeS[i] <- tempS$beta[2]
+  l1OutSlopeM[i] <- tempM$beta[2]
+  l1OutSlopeL[i] <- tempL$beta[2]
+  
+  l1OutInterceptS[i] <- tempS$beta[1]
+  l1OutInterceptM[i] <- tempM$beta[1]
+  l1OutInterceptL[i] <- tempL$beta[1]
+}
 
-max(unlist(c(c(resSmallMax[[1]], resSmallMin[[1]], resSmallMed[[1]]) - c(resSmallMean[[1]]),
-             c(resSmallMaxML[[1]], resSmallMinML[[1]], resSmallMedML[[1]]) - c(resSmallMeanML[[1]]),
-             data.frame(resSmallMaxMLYear[[1]], resSmallMinMLYear[[1]], resSmallMedMLYear[[1]]) - data.frame(resSmallMeanMLYear[[1]], resSmallMeanMLYear[[1]], resSmallMeanMLYear[[1]]))))
+# Quickly viewing the differences seen with leave one out cross validation 
+round(l1OutSlopeS - resSmallMeanMLYearField$b[2], 3)
+round(l1OutInterceptS - resSmallMeanMLYearField$b[1], 3)
+round(l1OutSlopeM - resMedMeanMLYearField$b[2], 3)
+round(l1OutInterceptM - resMedMeanMLYearField$b[1], 3)
+round(l1OutSlopeL - resLargeMeanMLYearField$b[2], 3)
+round(l1OutInterceptL - resLargeMeanMLYearField$b[1], 3)
 
-max(unlist(c(c(resLargeMax[[1]], resLargeMin[[1]], resLargeMed[[1]]) - c(resLargeMean[[1]]),
-             c(resLargeMaxML[[1]], resLargeMinML[[1]], resLargeMedML[[1]]) - c(resLargeMeanML[[1]]),
-             data.frame(resLargeMaxMLYear[[1]], resLargeMinMLYear[[1]], resLargeMedMLYear[[1]]) - data.frame(resLargeMeanMLYear[[1]], resLargeMeanMLYear[[1]], resLargeMeanMLYear[[1]]))))
+# calculating the maximum differences seen
+max(l1OutSlopeS - resSmallMeanMLYearField$b[2])
+max(l1OutInterceptS - resSmallMeanMLYearField$b[1])
+max(l1OutSlopeM - resMedMeanMLYearField$b[2])
+max(l1OutInterceptM - resMedMeanMLYearField$b[1])
+max(l1OutInterceptL - resLargeMeanMLYearField$b[1])
+max(l1OutSlopeL - resLargeMeanMLYearField$b[2])
 
+## Estimating the impact of pub bias ~ confounded with the issue that samping variance is expected to be confounded with proximity to the upper and lower benchmark
+rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + samplingVarSmall_Mean, slab=StudyName,  data = dat)
+rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + samplingVarMed_Mean, slab=StudyName,  data = dat)
+rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + samplingVarLarge_Mean, slab=StudyName,  data = dat)
 
-## Discrepancies depending on whether data is imputed or not
-resSmallNoImpMLYear; resSmallMeanMLYear
-resMedNoImpMLYear; resMedMeanMLYear
-resLargeNoImpMLYear; resLargeMeanMLYear
-
-
+## Estimating the association b/w sample size and estimated power not sampling variance #### 
+rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + NumberOfArticles, slab=StudyName,  data = dat)
+rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + NumberOfArticles, slab=StudyName,  data = dat)
+rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + NumberOfArticles, slab=StudyName,  data = dat)
 

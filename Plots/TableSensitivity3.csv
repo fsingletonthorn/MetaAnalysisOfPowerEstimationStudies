@@ -1,7 +1,7 @@
 "","intrcpt","as.numeric.YearsStudiedMean...mean.YearsStudiedMean..","intrcpt.1","as.numeric.YearsStudiedMean...mean.YearsStudiedMean...1","intrcpt.2","as.numeric.YearsStudiedMean...mean.YearsStudiedMean...2"
-"resSmallMeanMLYearField.b",0.229,-0.001,0.622,-0.002,0.796,-0.001
-"smallWeightedYearField.b",0.23,-0.001,0.624,-0.002,0.838,-0.003
-"resSmallNoImpMLYearField.b",0.228,-0.002,0.582,-0.003,0.818,-0.002
-"resSmallMaxMLYearField.b",0.229,-0.001,0.621,-0.002,0.795,-0.001
-"resSmallMinMLYearField.b",0.229,-0.001,0.623,-0.002,0.797,-0.001
-"resSmallMedMLYearField.b",0.229,-0.001,0.623,-0.002,0.796,-0.001
+"resSmallMeanMLYearField.b",0.231,-0.001,0.622,-0.002,0.797,-0.001
+"smallWeightedYearField.b",0.232,-0.001,0.624,-0.002,0.84,-0.003
+"resSmallNoImpMLYearField.b",0.23,-0.002,0.582,-0.003,0.819,-0.002
+"resSmallMaxMLYearField.b",0.231,-0.001,0.621,-0.002,0.796,-0.001
+"resSmallMinMLYearField.b",0.232,-0.001,0.623,-0.002,0.798,-0.001
+"resSmallMedMLYearField.b",0.231,-0.001,0.623,-0.002,0.797,-0.001
