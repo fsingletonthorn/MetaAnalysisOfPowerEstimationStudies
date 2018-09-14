@@ -1084,10 +1084,12 @@ l1OutInterceptM <- rep(NA, length(dat$id))
 l1OutInterceptL <- rep(NA, length(dat$id))
 
 # Leave one our cv 
+dat <- as.data.frame(dat) dat$id
+
 for(i in 1:length(dat$id)) {
-  tempS <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat[-which(dat$id==dat$id[i])])
-  tempM <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName, data = dat[-which(dat$id == dat$id[i])])
-  tempL <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat[-which(dat$id == dat$id[i])])
+  tempS <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat[-which(dat$id==dat$id[i]),])
+  tempM <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName, data = dat[-which(dat$id == dat$id[i]),])
+  tempL <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat[-which(dat$id == dat$id[i]),])
   l1OutSlopeS[i] <- tempS$beta[2]
   l1OutSlopeM[i] <- tempM$beta[2]
   l1OutSlopeL[i] <- tempL$beta[2]
