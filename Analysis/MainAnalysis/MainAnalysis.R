@@ -3,7 +3,7 @@ library(readxl)
 library(metafor)
 library(tidyverse)
 library(stringr)
-
+library(ggplot2)
 ########### Setting up functions for data imputation ########
 # the following estimators are from Wan, X., Wang, W., Liu, J., & Tong, T. (2014). Estimating the sample mean and standard deviation from the sample size, median, range and/or interquartile range. BMC Medical Research Methodology, 14(1), 135. doi:10.1186/1471-2288-14-135
 # But the functions are from the package veramata, See Charles Grey's Dissertation for the completed package, or https://github.com/softloud/varameta before she finishes it. 
@@ -152,6 +152,9 @@ dat$PowerAtSmallEffectMedian[dat$id==103] <- NA
 dat$PowerAtLargeEffectMedian[dat$id==103] <- NA
 dat$PowerAtSmallEffectMean[dat$id==103] <- NA
 dat$PowerAtLargeEffectMean[dat$id==103] <- NA
+
+
+
 
 #### Estimating missing parameters ####
 ###### Estimating Small var and sd
@@ -1125,3 +1128,25 @@ rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + S
 rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + NumberOfArticles, slab=StudyName,  data = dat)
 rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + NumberOfArticles, slab=StudyName,  data = dat)
 
+#### Descriptives####
+# Subfield classification table
+knitr::kable(table(dat$SubfieldClassification)[order(table(dat$SubfieldClassification), decreasing = T)])
+
+#Years included in analysis diagram
+# splitting multiple years at "-"
+years <- str_split(dat$YearsStudied, "-", simplify = T)
+# converting to numerics
+years <- apply(years,  2, as.numeric)
+
+years <- data.frame(years, dat$SubfieldClassification, (log(dat$NumberOfArticles)/(max(log(dat$NumberOfArticles)))))
+names(years) <- c('startYear','endYear', 'Subfield', "NumArticles")
+# years$endYear <- ifelse(is.na(years$endYear), years$startYear, years$endYear)
+years <- years[order(years['startYear']),]
+coolplot<-ggplot(years, aes(Subfield, y= startYear, ymin = startYear, ymax = endYear, colour = Subfield)) + 
+  theme_classic() +
+  geom_linerange(na.rm = T, alpha = .7, position = position_jitter(w = .3, h = .0), size = (log(dat$NumberOfArticles))) + coord_flip() +
+  geom_point(na.rm = T, alpha = .7, position = position_jitter(w = .3, h = .0), size = (log(dat$NumberOfArticles))) +
+  theme(legend.position="bottom", legend.justification = c(-.5, 1), legend.title = element_blank()) +  
+  ylab("Year") 
+coolplot
+ggsave("PlotW.pdf", coolplot, device = 'pdf', width = 25, height = 12, units = 'cm')
