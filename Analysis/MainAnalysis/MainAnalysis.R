@@ -401,7 +401,6 @@ resMedMeanMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 
 ######## model accounting for area of research 
 resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
 
-
 ## same models with median imputation
 #### Most basic model ####
 resMedMed <- rma(yi = estMedMean, vi = samplingVarMed_Med,  data = dat, method = "REML")
