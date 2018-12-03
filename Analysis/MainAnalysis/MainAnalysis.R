@@ -412,9 +412,6 @@ resMedMedMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = ~ 1 
 resMedMedMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
-
-
-
 ## same models with min imputation 
 #### Most basic model ####
 resMedMin <- rma(yi = estMedMean, vi = samplingVarMed_Min,  data = dat, method = "REML")
@@ -659,9 +656,6 @@ max(data.frame(resMedMaxMLYearField$b, resMedMinMLYearField$b, resMedMedMLYearFi
 ######## model accounting for area of research 
 dat$samplingVarLarge_Mean
 resLargeMeanMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
-
-
-
 
 
 ####### Plots #######
@@ -1028,6 +1022,7 @@ forest(resMedNoImpMLYear, addfit = F)
 forest(resMedMeanMLYear)
 
 
+
 # PLOT medium  
 samplingVar <- dat$samplingVarMed_Mean
 values <- dat$estMedMean
@@ -1149,3 +1144,11 @@ coolplot<-ggplot(years, aes(Subfield, y= startYear, ymin = startYear, ymax = end
   ylab("Year") 
 coolplot
 ggsave("PlotW.pdf", coolplot, device = 'pdf', width = 25, height = 12, units = 'cm')
+
+
+
+
+# Random effects empirical bayes estimates 
+ranef(resMedMeanMLYearField, transf = )$SubfieldClassification
+ranef(resSmallMaxMLYearField)$SubfieldClassification
+ranef(resLargeMeanMLYearField)$SubfieldClassification
