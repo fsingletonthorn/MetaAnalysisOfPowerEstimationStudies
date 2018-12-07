@@ -1146,8 +1146,6 @@ coolplot
 ggsave("PlotW.pdf", coolplot, device = 'pdf', width = 25, height = 12, units = 'cm')
 
 
-
-
 # Random effects empirical bayes estimates 
 ranef(resMedMeanMLYearField, transf = )$SubfieldClassification
 ranef(resSmallMaxMLYearField)$SubfieldClassification
