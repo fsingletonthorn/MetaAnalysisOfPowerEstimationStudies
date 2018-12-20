@@ -366,7 +366,7 @@ resSmallNoImpML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_NoImputedD
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallNoImpMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resSmallNoImpMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_NoImputedData, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resSmallNoImpMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_NoImputedData, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 # Medium 
 #### Most basic model ####
@@ -376,7 +376,7 @@ resMedNoImpML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_NoImputedData, r
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedNoImpMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resMedNoImpMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_NoImputedData, random =  list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resMedNoImpMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_NoImputedData, random =  list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 # Large
 # No ML
@@ -399,7 +399,7 @@ resMedMeanML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMeanMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
+resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
 
 ## same models with median imputation
 #### Most basic model ####
@@ -409,7 +409,7 @@ resMedMedML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Med, random = ~ 1 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMedMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resMedMedMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resMedMedMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 ## same models with min imputation 
@@ -420,8 +420,7 @@ resMedMinML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Min, random = ~ 1 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMinMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resMedMinMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Min, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
-
+resMedMinMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Min, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 ## same models with max imputation 
 #### Most basic model ####
@@ -431,7 +430,7 @@ resMedMaxML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Max, random = ~ 1 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resMedMaxMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random = ~ (1 | id), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resMedMaxMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resMedMaxMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random = list(~ 1 | id, ~ 1 |  SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 #### SMALL EFFECT SIZE BENCHMARK
@@ -443,7 +442,7 @@ resSmallMeanML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, rando
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallMeanMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
 ######## model accounting for area of research 
-resSmallMeanMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+resSmallMeanMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
 
 
 ## same models with median imputation
@@ -454,7 +453,7 @@ resSmallMedML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Med, random 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallMedMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resSmallMedMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Med, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resSmallMedMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Med, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 
@@ -466,7 +465,7 @@ resSmallMinML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Min, random 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallMinMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resSmallMinMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Min, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resSmallMinMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Min, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 
@@ -478,7 +477,7 @@ resSmallMaxML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Max, random 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resSmallMaxMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Max, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resSmallMaxMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Max, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resSmallMaxMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Max, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 #### LARGE EFFECT SIZE BENCHMARK
@@ -491,7 +490,7 @@ resLargeMeanML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, rando
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMeanMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
 ######## model accounting for area of research 
-resLargeMeanMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+resLargeMeanMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
 
 
 
@@ -503,7 +502,7 @@ resLargeMedML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Med, random 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMedMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resLargeMedMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Med, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resLargeMedMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Med, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) * SubfieldClassification,  data = dat)
 
 
 
@@ -515,7 +514,7 @@ resLargeMinML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Min, random 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMinMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resLargeMinMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Min, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resLargeMinMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Min, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 
@@ -528,7 +527,7 @@ resLargeMaxML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Max, random 
 ######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
 resLargeMaxMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 ######## model accounting for area of research 
-resLargeMaxMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, random = list(~ 1 | id, ~ 1 + SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+resLargeMaxMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
 
 
 #### Sensititivty analysis ####
@@ -551,9 +550,9 @@ largeWeightedYear <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, r
 
 
 # Estimating these with added year and field of research 
-mediumWeightedYearField <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
-smallWeightedYearField <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
-largeWeightedYearField <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 + SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+mediumWeightedYearField <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+smallWeightedYearField <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+largeWeightedYearField <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
 
 
 ## Estimating differences caused by weigting by number of studies 
