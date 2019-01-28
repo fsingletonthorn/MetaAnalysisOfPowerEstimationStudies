@@ -1,6 +1,6 @@
 # Secondary analysis of the proportion of studies reporting a PA, meta-anaylsis without mods, and meta-analysis with year as a moderator
 ## Code adapted from http://www.metafor-project.org/doku.php/faq#how_is_the_freeman-tukey_trans ~ Example from this used as a rough model (i.e., not FE, but REML estimation used, but otherwise quite similar), code for last diagram adapted from "http://www.metafor-project.org/doku.php/analyses:viechtbauer2007b"
-#library(metafor); library(readxl)
+library(metafor); library(readxl)
 
 # Importing data - you will need to replace this file path with the file path to the file from https://osf.io/gpvbq/
 dataSetOri <- read_excel("SecondaryAnalysisData2018.03.25.xlsx", 
@@ -60,12 +60,12 @@ resSimple <- rma(yi, vi, method="REML", data=dat, mods = medianYear-mean(medianY
 predSimple <- predict(resSimple, transf=transf.ipft.hm, targs=list(ni=dat$NumberOfArticlesExamined))
 
 #### Random effects meta analysis including median year as a moderator, final model #####
-res1 <- rma.mv(yi, vi, method="REML", random = list(~ PaperCitation, ~ SubfieldClassification), data=dat, mods = medianYear-mean(medianYear))
+res1 <- rma.mv(yi, vi, method="REML", random = list(~ 1 |  SubfieldClassification / PaperCitation  / I(1:nrow(dat))), data=dat, mods = medianYear-mean(medianYear))
 pred0 <- predict(res1, 0, transf=transf.ipft.hm, targs=list(ni=dat$NumberOfArticlesExamined))
 
 # back transform, yi = doub arcsin transformed value 
 dat.back <- summary(dat, transf=transf.ipft, ni=dat$NumberOfArticlesExamined)
-
+summary(res1, transf =transf.ipft)
 # Retitleing for visulisation 
 dat.back$SubfieldClassification[dat.back$SubfieldClassification == "Neurocog"] <- "Neuropsychology"
 dat.back$SubfieldClassification[dat.back$SubfieldClassification == "Management research"] <- "Management/IO"
