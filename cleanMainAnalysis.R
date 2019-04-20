@@ -15,7 +15,6 @@ library(ggplot2)
 ##  q1 first quartile
 ##  q3 third quartile
 
-
 eff_est_wan_c2 <- function(a, q.1, m, q.3, b, n) {
   x.bar <- (a + 2 * q.1 + 2 * m + 2 * q.3 + b) / 8
   s <- 
