@@ -365,6 +365,10 @@ resLargeNoImpMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_NoImp
 ####### MEDIUM EFFECT SIZE BENCHMARK 
 ######## model accounting for area of research # Models with means 
 resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
+# ICCs
+round(resMedMeanMLYearField$sigma2[1] / sum(resMedMeanMLYearField$sigma2), 3)
+round(resMedMeanMLYearField$sigma2[2] / sum(resMedMeanMLYearField$sigma2), 3)
+round(resMedMeanMLYearField$sigma2[3] / sum(resMedMeanMLYearField$sigma2), 3)
 
 ## same models with median imputation
 ######## model accounting for area of research 
@@ -379,6 +383,10 @@ resMedMaxMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random =
 
 #### SMALL EFFECT SIZE BENCHMARK
 resSmallMeanMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+# ICCs
+round(resSmallMeanMLYearField$sigma2[1] / sum(resSmallMeanMLYearField$sigma2), 3)
+round(resSmallMeanMLYearField$sigma2[2] / sum(resSmallMeanMLYearField$sigma2), 3)
+round(resSmallMeanMLYearField$sigma2[3] / sum(resSmallMeanMLYearField$sigma2), 3)
 
 ## same models with median imputation
 resSmallMedMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Med, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
@@ -392,6 +400,11 @@ resSmallMaxMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Max, ra
 #### LARGE EFFECT SIZE BENCHMARK
 # Models with mean imputation
 resLargeMeanMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+# ICCs
+round(resMedMeanMLYearField$sigma2[1] / sum(resMedMeanMLYearField$sigma2), 3)
+round(resMedMeanMLYearField$sigma2[2] / sum(resMedMeanMLYearField$sigma2), 3)
+round(resMedMeanMLYearField$sigma2[3] / sum(resMedMeanMLYearField$sigma2), 3)
+
 
 ## same models with median imputation
 resLargeMedMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Med, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
