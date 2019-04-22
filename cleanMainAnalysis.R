@@ -401,9 +401,9 @@ resSmallMaxMLYearField <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Max, ra
 # Models with mean imputation
 resLargeMeanMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
 # ICCs
-round(resMedMeanMLYearField$sigma2[1] / sum(resMedMeanMLYearField$sigma2), 3)
-round(resMedMeanMLYearField$sigma2[2] / sum(resMedMeanMLYearField$sigma2), 3)
-round(resMedMeanMLYearField$sigma2[3] / sum(resMedMeanMLYearField$sigma2), 3)
+round(resLargeMeanMLYearField$sigma2[1] / sum(resLargeMeanMLYearField$sigma2), 3)
+round(resLargeMeanMLYearField$sigma2[2] / sum(resLargeMeanMLYearField$sigma2), 3)
+round(resLargeMeanMLYearField$sigma2[3] / sum(resLargeMeanMLYearField$sigma2), 3)
 
 
 ## same models with median imputation
