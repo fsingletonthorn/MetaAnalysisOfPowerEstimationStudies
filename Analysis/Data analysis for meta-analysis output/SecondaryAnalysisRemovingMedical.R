@@ -1,6 +1,7 @@
 # Secondary analysis of the proportion of studies reporting a PA, meta-anaylsis without mods, and meta-analysis with year as a moderator
 ## Code adapted from http://www.metafor-project.org/doku.php/faq#how_is_the_freeman-tukey_trans ~ Example from this used as a rough model (i.e., not FE, but REML estimation used, but otherwise quite similar), code for last diagram adapted from "http://www.metafor-project.org/doku.php/analyses:viechtbauer2007b"
-library(metafor); library(readxl)
+library(metafor)
+library(readxl)
 
 # Importing data - you will need to replace this file path with the file path to the file from https://osf.io/gpvbq/
 dataSetOri <- read_excel("SecondaryAnalysisData2018.03.25.xlsx", 
@@ -48,7 +49,7 @@ dat$xi <- round(dat$ProportionReportingPA * dat$NumberOfArticlesExamined)
 ## DOUBLE ARCSINE TRANSFORM of number of articles, which should make the sampling distribution more normal - xi = number of "sucesses", ni = number sampled total (dat$NumberOfArticlesExamined)
 # See Miller, J. J. (1978). The Inverse of the Freeman - Tukey Double Arcsine Transformation. The American Statistician, 32(4), 138-138. doi:10.1080/00031305.1978.10479283 for details about the transformation, the formula used is the same, except that there is a multiplicative constant of .5 (accounted for in the transformation and back-transformation)
 # The TF double arcsine transformation is used to normalie and variance-stabilise the sampling distribution of proportions
-dat <- escalc(measure="PFT",xi=xi,ni=NumberOfArticlesExamined, data=dat)
+dat <- escalc(measure="PFT",xi=xi, ni=NumberOfArticlesExamined, data=dat)
 
 #### Random effects meta analysis used, restricted maximum-likelihood estimator
 res <- rma(yi, vi, method="REML", data=dat)
@@ -103,4 +104,6 @@ dev.off()
 
 ## Profile plots
 profile(res1)
+
+
 
