@@ -4,6 +4,8 @@ library(metafor)
 library(tidyverse)
 library(stringr)
 library(ggplot2)
+library(mice)
+library(Amelia)
 ########### Setting up functions for data imputation ########
 # the following estimators are from Wan, X., Wang, W., Liu, J., & Tong, T. (2014). Estimating the sample mean and standard deviation from the sample size, median, range and/or interquartile range. BMC Medical Research Methodology, 14(1), 135. doi:10.1186/1471-2288-14-135
 # But the functions are from the package veramata, See Charles Grey's Dissertation for the completed package, or https://github.com/softloud/varameta before she finishes it. 
@@ -140,7 +142,6 @@ length(unique(dat$id[(is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT)
 
 ## Recoding areas of reserach as per the preregistration 
 # “clinical psychology/psychiatry”, “social/personality”, “education”, “general psychology” (i.e., those studies which look across fields of psychology research), “management/IO psychology”, “cognitive psychology” “neuropsychology”, “meta-analysis”
-
 dat$SubfieldClassification[dat$SubfieldClassification == "Cognitive neuroscience, psychology, psychiatry"] <- "General Psychology"
 dat$SubfieldClassification[dat$SubfieldClassification == "Clinical"] <- "Clinical Psychology/Psychiatry"
 dat$SubfieldClassification[dat$SubfieldClassification == "Neuroscience"] <- "Neuropsychology"
@@ -274,7 +275,7 @@ sum(!is.na(data.frame(absDiffVarLarge, absDiffVarMed, absDiffVarSmall)))
 ## putting Means estimated from frequency plots into the appropraite places 
 dat[c("estSmallMean", "estMedMean", "estLargeMean")][dat$id == 62,] <- c(0.2456618, 0.5399306, 0.67625)
 
-######## Missing data imputation #########
+######## Missing data estimation #########
 #### medium
 replacementVis <- mean(dat$varMed, na.rm = T)
 dat$varMed_MeanImpute <- dat$varMed
@@ -366,9 +367,11 @@ resLargeNoImpMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_NoImp
 ######## model accounting for area of research # Models with means 
 resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
 # ICCs
+
 round(resMedMeanMLYearField$sigma2[1] / sum(resMedMeanMLYearField$sigma2), 3)
 round(resMedMeanMLYearField$sigma2[2] / sum(resMedMeanMLYearField$sigma2), 3)
 round(resMedMeanMLYearField$sigma2[3] / sum(resMedMeanMLYearField$sigma2), 3)
+
 
 ## same models with median imputation
 ######## model accounting for area of research 
@@ -422,7 +425,6 @@ resLargeMaxMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, ra
 mediumWeightedYearField <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
 smallWeightedYearField <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
 largeWeightedYearField <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
-
 
 ## Estimating differences caused by weigting by number of studies 
 mediumWeightedYearField$b - resMedMeanMLYearField$b
@@ -788,3 +790,132 @@ ggsave("PlotW.pdf", coolplot, device = 'pdf', width = 25, height = 12, units = '
 write.csv(round(ranef(resMedMeanMLYearField)$SubfieldClassification, 3), "Plots/bloopMed.csv")
 write.csv(round(ranef(resSmallMaxMLYearField)$SubfieldClassification, 3), "Plots/bloopSmall.csv")
 write.csv(round(ranef(resLargeMeanMLYearField)$SubfieldClassification, 3), "Plots/bloopLarge.csv")
+
+
+# Mutliple imputation just SDs
+imputationData <- dat[,c("estSmallMean", "estMedMean", "estLargeMean", "samplingVarMed_NoImputedData", "samplingVarSmall_NoImputedData", "samplingVarLarge_NoImputedData", "YearsStudiedMean", 'SubfieldClassification', "id")]
+imputationData$id2 <- 1:nrow(imputationData)
+names(imputationData) <- str_remove( names(imputationData) , "_NoImputedData")
+imp <- mice(imputationData, maxit=0)
+pred <- imp$predictorMatrix
+
+# Ensuring that means are not imupted
+pred[c("estSmallMean", "estMedMean",  "estLargeMean") ,] <- 0
+imp <- mice(imputationData, predictorMatrix = pred , print= F, m = 20, seed = 20190511)
+imp$method
+fitS <- with(imp, rma.mv(yi = estSmallMean, V = samplingVarSmall, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+fitM <- with(imp, rma.mv(yi = estMedMean, V = samplingVarMed, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+fitL <- with(imp, rma.mv(yi = estLargeMean, V = samplingVarLarge, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+
+# All of the following are 
+# Small
+out <- map( fitS$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+  })
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+inteceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaSmall <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
+# Medium 
+out <- map( fitM$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+})
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+interceptMed <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaMed <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
+# Large 
+out <- map( fitL$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+})
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+intceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaLarge <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
+
+
+# Mutliple imputation for including both means and SDs
+imputationData <- dat[,c("estSmallMean", "estMedMean", "estLargeMean", "samplingVarMed_NoImputedData", "samplingVarSmall_NoImputedData", "samplingVarLarge_NoImputedData", "YearsStudiedMean", 'SubfieldClassification', "id")]
+imputationData$id2 <- 1:nrow(imputationData)
+names(imputationData) <- str_remove( names(imputationData) , "_NoImputedData")
+
+imp <- mice(imputationData, print= F, m = 20, seed = 20190510)
+imp$method
+fit <- with(imp, rma.mv(yi = estSmallMean, V = samplingVarSmall, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+fit <- with(imp, rma.mv(yi = estMedMean, V = samplingVarMed, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+fit <- with(imp, rma.mv(yi = estLargeMean, V = samplingVarLarge, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+
+
+# Small
+out <- map( fitS$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+})
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+inteceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaSmall <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
+# Medium 
+out <- map( fitM$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+})
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+interceptMed <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaMed <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
+# Large 
+out <- map( fitL$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+})
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+intceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaLarge <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
+
+
+
+
+
