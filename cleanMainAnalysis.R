@@ -6,6 +6,7 @@ library(stringr)
 library(ggplot2)
 library(mice)
 library(Amelia)
+
 ########### Setting up functions for data imputation ########
 # the following estimators are from Wan, X., Wang, W., Liu, J., & Tong, T. (2014). Estimating the sample mean and standard deviation from the sample size, median, range and/or interquartile range. BMC Medical Research Methodology, 14(1), 135. doi:10.1186/1471-2288-14-135
 # But the functions are from the package veramata, See Charles Grey's Dissertation for the completed package, or https://github.com/softloud/varameta before she finishes it. 
@@ -367,7 +368,6 @@ resLargeNoImpMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_NoImp
 ######## model accounting for area of research # Models with means 
 resMedMeanMLYearField <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
 # ICCs
-
 round(resMedMeanMLYearField$sigma2[1] / sum(resMedMeanMLYearField$sigma2), 3)
 round(resMedMeanMLYearField$sigma2[2] / sum(resMedMeanMLYearField$sigma2), 3)
 round(resMedMeanMLYearField$sigma2[3] / sum(resMedMeanMLYearField$sigma2), 3)
@@ -420,6 +420,222 @@ resLargeMaxMLYearField <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, ra
 
 
 #### Sensititivty analysis ####
+#### Analysis ####
+## Running models without any imputed data or any estimated data
+#### Most basic model #### Small effect size
+resSmallNoImp <- rma(yi = estSmallMean, vi = samplingVarSmall_NoImputedData,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resSmallNoImpML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_NoImputedData, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resSmallNoImpMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+# Medium 
+#### Most basic model ####
+resMedNoImp <- rma(yi = estMedMean, vi = samplingVarMed_NoImputedData,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resMedNoImpML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_NoImputedData, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resMedNoImpMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+# Large
+# No ML
+resLargeNoImp <- rma(yi = estLargeMean, vi = samplingVarLarge_NoImputedData,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resLargeNoImpML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_NoImputedData, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resLargeNoImpMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_NoImputedData, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
+# Running analyses with imputed data, this time with mean imputation. These are the main results in the paper. 
+####### MEDIUM EFFECT SIZE BENCHMARK 
+# Models with means 
+#### Most basic model ####
+resMedMean <- rma(yi = estMedMean, vi = samplingVarMed_Mean,  data = dat, method = "REML", slab=StudyName)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resMedMeanML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat, slab=StudyName)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resMedMeanMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
+## same models with median imputation
+#### Most basic model ####
+resMedMed <- rma(yi = estMedMean, vi = samplingVarMed_Med,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resMedMedML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Med, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resMedMedMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+## same models with min imputation 
+#### Most basic model ####
+resMedMin <- rma(yi = estMedMean, vi = samplingVarMed_Min,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resMedMinML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Min, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resMedMinMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+## same models with max imputation 
+#### Most basic model ####
+resMedMax <- rma(yi = estMedMean, vi = samplingVarMed_Max,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resMedMaxML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Max,random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resMedMaxMLYear <- rma.mv(yi = estMedMean, V = samplingVarMed_Max, random = ~ (1 | id), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+#### SMALL EFFECT SIZE BENCHMARK
+# Models with means 
+#### Most basic model ####
+resSmallMean <- rma(yi = estSmallMean, vi = samplingVarSmall_Mean,  data = dat, method = "REML", slab=StudyName)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resSmallMeanML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat, slab=StudyName)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resSmallMeanMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+
+## same models with median imputation
+#### Most basic model ####
+resSmallMed <- rma(yi = estSmallMean, vi = samplingVarSmall_Med,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resSmallMedML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Med, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resSmallMedMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+## same models with min imputation 
+#### Most basic model ####
+resSmallMin <- rma(yi = estSmallMean, vi = samplingVarSmall_Min,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resSmallMinML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Min, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resSmallMinMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+## same models with max imputation 
+#### Most basic model ####
+resSmallMax <- rma(yi = estSmallMean, vi = samplingVarSmall_Max,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resSmallMaxML <- rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Max, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resSmallMaxMLYear <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Max, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
+#### LARGE EFFECT SIZE BENCHMARK
+# Models with mean imputation
+dat$samplingVarLarge_Mean
+#### Most basic model ####
+resLargeMean <- rma(yi = estLargeMean, vi = samplingVarLarge_Mean,  data = dat, method = "REML", slab=StudyName)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resLargeMeanML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat, slab=StudyName)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resLargeMeanMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+
+## same models with median imputation
+#### Most basic model ####
+resLargeMed <- rma(yi = estLargeMean, vi = samplingVarLarge_Med,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resLargeMedML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Med, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resLargeMedMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Med, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
+## same models with min imputation 
+#### Most basic model ####
+resLargeMin <- rma(yi = estLargeMean, vi = samplingVarLarge_Min,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resLargeMinML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Min, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resLargeMinMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Min, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
+## same models with max imputation 
+#### Most basic model ####
+resLargeMax <- rma(yi = estLargeMean, vi = samplingVarLarge_Max,  data = dat, method = "REML")
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper, no moderators #####  
+resLargeMaxML <- rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Max, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat)
+######## THIS MODEL ACCOUNTS FOR GROUPING by paper and years covered  ## , 
+resLargeMaxMLYear <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Max, random = ~ 1 | id, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat)
+
+
+#### Sensititivty analysis ####
+##### Weigting by number of studies random effects ####
+mediumWeightedML <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean,     random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+smallWeightedML <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+largeWeightedML <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+
+######## model accounting for area of research 
+# Estimating these with added year 
+mediumWeightedYear <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+smallWeightedYear <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+largeWeightedYear <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = ~ 1 | id,mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+
+
+# Estimating these with added year and field of research 
+mediumWeightedYearField <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+smallWeightedYearField <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+largeWeightedYearField <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
+
+
+## Estimating differences caused by weigting by number of studies 
+mediumWeightedYearField$b - resMedMeanMLYearField$b
+smallWeightedYearField$b - resSmallMeanMLYearField$b
+largeWeightedYearField$b - resLargeMeanMLYearField$b
+
+
+#### Differences with imputation or not ####
+## Estimating differences caused by data imputation 
+resSmallNoImpMLYearField$b - resSmallMeanMLYearField$b
+resMedNoImpMLYearField$b - resMedMeanMLYearField$b
+resLargeNoImpMLYearField$b - resLargeMeanMLYearField$b
+
+
+# making tables for easy demostrations of the different values
+smallModels <- t(data.frame(resSmallMeanML$b,
+                            smallWeightedML$b,
+                            resSmallNoImpML$b,
+                            resSmallMaxML$b,
+                            resSmallMinML$b,
+                            resSmallMedML$b))
+
+mediumModels <- t(data.frame(resMedMeanML$b, 
+                             mediumWeightedML$b,
+                             resMedNoImpML$b,
+                             resMedMaxML$b,
+                             resMedMinML$b,
+                             resMedMedML$b))
+
+
+largeModels <- t(data.frame(resLargeMeanML$b, 
+                            largeWeightedML$b,
+                            resLargeNoImpML$b,
+                            resLargeMaxML$b,
+                            resLargeMinML$b,
+                            resLargeMedML$b)) 
+
+SensitivityAnalysis<- data.frame(smallModels, mediumModels, largeModels)
+# write.csv(round(SensitivityAnalysis, 3), file = "Plots/TableSensitivity1.csv")
+
+# sensitivity analyses output for models w/ year and no field REs 
+
+smallModelsYear <- t(data.frame(resSmallMeanMLYear$b,
+                                smallWeightedYear$b,
+                                resSmallNoImpMLYear$b,
+                                resSmallMaxMLYear$b,
+                                resSmallMinMLYear$b,
+                                resSmallMedMLYear$b))
+
+mediumModelsYear <- t(data.frame(resMedMeanMLYear$b, 
+                                 mediumWeightedYear$b,
+                                 resMedNoImpMLYear$b,
+                                 resMedMaxMLYear$b,
+                                 resMedMinMLYear$b,
+                                 resMedMedMLYear$b))
+
+largeModelsYear <- t(data.frame(resLargeMeanMLYear$b, 
+                                largeWeightedYear$b,
+                                resLargeNoImpMLYear$b,
+                                resLargeMaxMLYear$b,
+                                resLargeMinMLYear$b,
+                                resLargeMedMLYear$b)) 
+SensitivityAnalysisYear<- data.frame(smallModelsYear, mediumModelsYear, largeModelsYear)
+# write.csv(round(SensitivityAnalysisYear, 3), file = "Plots/TableSensitivity2.csv")
+
+
 ##### Weigting by number of studies ####
 # Estimating these with added year and field of research 
 mediumWeightedYearField <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53),mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
@@ -465,10 +681,78 @@ SensitivityAnalysisYearField<- data.frame(smallModelsYearField, mediumModelsYear
 # write.csv(round(SensitivityAnalysisYearField, 3), file = "Plots/TableSensitivity3.csv")
 
 # max change from different imputation methods 
-
 max(data.frame(resLargeMaxMLYearField$b, resLargeMinMLYearField$b, resLargeMedMLYearField$b) - data.frame(resLargeMeanMLYearField$b,resLargeMeanMLYearField$b,resLargeMeanMLYearField$b))
 max(data.frame(resSmallMaxMLYearField$b, resSmallMinMLYearField$b, resSmallMedMLYearField$b) - data.frame(resSmallMeanMLYearField$b,resSmallMeanMLYearField$b,resSmallMeanMLYearField$b))
 max(data.frame(resMedMaxMLYearField$b, resMedMinMLYearField$b, resMedMedMLYearField$b) - data.frame(resMedMeanMLYearField$b,resMedMeanMLYearField$b,resMedMeanMLYearField$b))
+
+
+
+
+
+
+############## Multiple imputation ############
+# Mutliple imputation just SDs
+imputationData <- dat[,c("estSmallMean", "estMedMean", "estLargeMean", "samplingVarMed_NoImputedData", "samplingVarSmall_NoImputedData", "samplingVarLarge_NoImputedData", "YearsStudiedMean", 'SubfieldClassification', "id")]
+imputationData$id2 <- 1:nrow(imputationData)
+names(imputationData) <- str_remove( names(imputationData) , "_NoImputedData")
+imp <- mice(imputationData, maxit=0)
+pred <- imp$predictorMatrix
+
+# Ensuring that means are not imupted
+pred[c("estSmallMean", "estMedMean",  "estLargeMean") ,] <- 0
+imp <- mice(imputationData, predictorMatrix = pred , print= F, m = 20, seed = 20190511)
+imp$method
+fitS <- with(imp, rma.mv(yi = estSmallMean, V = samplingVarSmall, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+fitM <- with(imp, rma.mv(yi = estMedMean, V = samplingVarMed, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+fitL <- with(imp, rma.mv(yi = estLargeMean, V = samplingVarLarge, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
+
+# All of the following are 
+# Small
+out <- map( fitS$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+})
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+interceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaSmall <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
+# Medium 
+out <- map( fitM$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+})
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+interceptMed <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaMed <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
+# Large 
+out <- map( fitL$analyses   , function(x) {
+  se <- x$se
+  coef <- coef(x)
+  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
+})
+
+intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
+interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
+interceptLarge <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
+
+
+betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
+betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
+betaLarge <- mi.meld(as.matrix(betas), as.matrix(betasSE))
+
 
 
 ## Checking what happens if we include the two .99s with minimum variances 
@@ -627,7 +911,6 @@ dev.off()
 
 
 #### Plots of change over time 
-
 ##### Small 
 png(filename = "Plots/ScatterPlotSmall.png",width = 800, height = 500, units = "p")
 # PLOT medium  
@@ -709,8 +992,6 @@ lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.u
 dev.off()
 
 
-
-
 ## Model diagnostics #### 
 l1OutSlopeS <-  rep(NA, length(dat$id))
 l1OutSlopeM <-  rep(NA, length(dat$id))
@@ -787,135 +1068,7 @@ coolplot
 ggsave("PlotW.pdf", coolplot, device = 'pdf', width = 25, height = 12, units = 'cm')
 
 # Random effects empirical bayes estimates 
-write.csv(round(ranef(resMedMeanMLYearField)$SubfieldClassification, 3), "Plots/bloopMed.csv")
-write.csv(round(ranef(resSmallMaxMLYearField)$SubfieldClassification, 3), "Plots/bloopSmall.csv")
-write.csv(round(ranef(resLargeMeanMLYearField)$SubfieldClassification, 3), "Plots/bloopLarge.csv")
-
-
-# Mutliple imputation just SDs
-imputationData <- dat[,c("estSmallMean", "estMedMean", "estLargeMean", "samplingVarMed_NoImputedData", "samplingVarSmall_NoImputedData", "samplingVarLarge_NoImputedData", "YearsStudiedMean", 'SubfieldClassification', "id")]
-imputationData$id2 <- 1:nrow(imputationData)
-names(imputationData) <- str_remove( names(imputationData) , "_NoImputedData")
-imp <- mice(imputationData, maxit=0)
-pred <- imp$predictorMatrix
-
-# Ensuring that means are not imupted
-pred[c("estSmallMean", "estMedMean",  "estLargeMean") ,] <- 0
-imp <- mice(imputationData, predictorMatrix = pred , print= F, m = 20, seed = 20190511)
-imp$method
-fitS <- with(imp, rma.mv(yi = estSmallMean, V = samplingVarSmall, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
-fitM <- with(imp, rma.mv(yi = estMedMean, V = samplingVarMed, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
-fitL <- with(imp, rma.mv(yi = estLargeMean, V = samplingVarLarge, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
-
-# All of the following are 
-# Small
-out <- map( fitS$analyses   , function(x) {
-  se <- x$se
-  coef <- coef(x)
-  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
-  })
-
-intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
-interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
-inteceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
-
-betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
-betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
-betaSmall <- mi.meld(as.matrix(betas), as.matrix(betasSE))
-
-# Medium 
-out <- map( fitM$analyses   , function(x) {
-  se <- x$se
-  coef <- coef(x)
-  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
-})
-
-intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
-interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
-interceptMed <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
-
-betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
-betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
-betaMed <- mi.meld(as.matrix(betas), as.matrix(betasSE))
-
-# Large 
-out <- map( fitL$analyses   , function(x) {
-  se <- x$se
-  coef <- coef(x)
-  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
-})
-
-intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
-interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
-intceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
-
-
-betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
-betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
-betaLarge <- mi.meld(as.matrix(betas), as.matrix(betasSE))
-
-
-
-# Mutliple imputation for including both means and SDs
-imputationData <- dat[,c("estSmallMean", "estMedMean", "estLargeMean", "samplingVarMed_NoImputedData", "samplingVarSmall_NoImputedData", "samplingVarLarge_NoImputedData", "YearsStudiedMean", 'SubfieldClassification', "id")]
-imputationData$id2 <- 1:nrow(imputationData)
-names(imputationData) <- str_remove( names(imputationData) , "_NoImputedData")
-
-imp <- mice(imputationData, print= F, m = 20, seed = 20190510)
-imp$method
-fit <- with(imp, rma.mv(yi = estSmallMean, V = samplingVarSmall, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
-fit <- with(imp, rma.mv(yi = estMedMean, V = samplingVarMed, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
-fit <- with(imp, rma.mv(yi = estLargeMean, V = samplingVarLarge, random = ~ 1 | SubfieldClassification / id / id2, mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean))))
-
-
-# Small
-out <- map( fitS$analyses   , function(x) {
-  se <- x$se
-  coef <- coef(x)
-  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
-})
-
-intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
-interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
-inteceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
-
-betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
-betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
-betaSmall <- mi.meld(as.matrix(betas), as.matrix(betasSE))
-
-# Medium 
-out <- map( fitM$analyses   , function(x) {
-  se <- x$se
-  coef <- coef(x)
-  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
-})
-
-intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
-interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
-interceptMed <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
-
-betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
-betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
-betaMed <- mi.meld(as.matrix(betas), as.matrix(betasSE))
-
-# Large 
-out <- map( fitL$analyses   , function(x) {
-  se <- x$se
-  coef <- coef(x)
-  return(tibble(intercept = tibble(coef[1],se[1]), beta = tibble(coef[2],se[2])))
-})
-
-intercepts <- unlist( (map(out, function(x) x$intercept[[1]] ))) 
-interceptsSE <- unlist( (map(out, function(x) x$intercept[[2]] )))
-intceptSmall <- mi.meld(as.matrix(intercepts), as.matrix(interceptsSE))
-
-
-betas <-  unlist( (map(out, function(x) x$beta[[1]] ))) 
-betasSE <-  unlist( (map(out, function(x) x$beta[[2]] ))) 
-betaLarge <- mi.meld(as.matrix(betas), as.matrix(betasSE))
-
-
-
-
-
+# write.csv(round(ranef(resMedMeanMLYearField)$SubfieldClassification, 3), "Plots/bloopMed.csv")
+# write.csv(round(ranef(resSmallMaxMLYearField)$SubfieldClassification, 3), "Plots/bloopSmall.csv")
+# write.csv(round(ranef(resLargeMeanMLYearField)$SubfieldClassification, 3), "Plots/bloopLarge.csv")
 
