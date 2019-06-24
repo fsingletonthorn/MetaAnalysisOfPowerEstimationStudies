@@ -1,6 +1,6 @@
 ---
-title             : "The Statistical Power of Psychology Research Has Remained Low for Over Half a Century"
-shorttitle        : "The Power of Psychology Research"
+title             : "The Statistical Power of Psychology Research: A Systematic Review and Meta-analysis"
+shorttitle        : "The Statistical Power of Psychology Research"
 
 author: 
   - name          : "Felix Singleton Thorn"
@@ -9,7 +9,7 @@ author:
     address       : "Faculty of Medicine, Dentistry and Health Sciences, School of Psychological Sciences, University of Melbourne, Parkville, Victoria, 3010, Australia"
     email         : "fsingletonthorn@gmail.com"
   - name          : "Fiona Fidler"
-    affiliation   : "1,2,3"
+    affiliation   : "2,3"
   - name          : "Paul Dudgeon"
     affiliation   : "1"
 
@@ -26,11 +26,10 @@ authornote: |
   F. Singleton Thorn conceptualized the research question, designed and performed the statistical analysis, collected the data and drafted this manuscript. F. Fidler and P. Dudgeon provided critical revisions to this manuscript. P. Dudgeon gave essential advice on the statistical analyses reported in this manuscript. 
 
 abstract: |
-  Statistical power describes the probability of a statsitical test reaching statistical significance given a specific alternative hypothesis. Over the last half century, a number of "Power Surveys" have been published in psychology, papers which examine the statistical power of a set of studies in the published literature. This study uses mixed effects meta-analyses to analyze 46 power surveys, including over 8,000 individual studies published from 1932-2014, to estimate the average statistical power of psychology research at Cohen’s standardized effect size benchmarks and to show how this value has changed over time. The average statistical power of psychology research over this time period at Cohen’s (1988) benchmarks is extremely low for ‘small’ effects, .23 (95% CIs [.17, .29]), somewhat low for ‘medium’ effects, .62 (95% CI [.54, .70]), and only acceptably high for ‘large’ effects, .80 (95% CI [.68, .92]). The average statistical power of published psychology research has seen little to no change over time. A secondary analysis of surveys which assessed how often power analyses are reported in psychology research suggests that power analysis reporting rates have increased slightly over time but remain low. Finally, methods for avoiding the negative impacts of low powered research are outlined.
+  Statistical power describes the probability of a statistical test reaching statistical significance given a specific alternative hypothesis. Over the last half century, a number of "Power Surveys" have been published in psychology, papers which examine the statistical power of a set of studies in the published literature. This study uses mixed effects meta-analyses to analyze 46 power surveys, including over 8,000 individual studies published from 1932-2014, to estimate the average statistical power of psychology research at Cohen’s standardized effect size benchmarks and to show how this value has changed over time. The average statistical power of psychology research over this time period at Cohen’s (1988) benchmarks is extremely low for ‘small’ effects, .23 (95% CIs [.17, .29]), somewhat low for ‘medium’ effects, .62 (95% CI [.54, .70]), and only acceptably high for ‘large’ effects, .80 (95% CI [.68, .92]). The average statistical power of published psychology research has seen little to no change over time. A secondary analysis of surveys which assessed how often power analyses are reported in psychology research suggests that power analysis reporting rates have increased slightly over time but remain low. Finally, methods for avoiding the negative impacts of low powered research are outlined.
 
 
-keywords          : "Publication bias, effect size, QRPs, metascience, metaresearch"
-wordcount         : "X"
+keywords          : "Publication bias, effect size, QRPs, statistical power, metascience, metaresearch"
 
 bibliography      : ["references.bib"]
 
@@ -41,13 +40,13 @@ tablelist         : no
 footnotelist      : no
 linenumbers       : no
 mask              : no
-draft             : no
+draft             : yes
 always_allow_html : yes
 
 documentclass     : "apa6"
 classoption       : "man"
 output:
-  papaja::apa6_word
+  papaja::apa6_pdf
 #:
 #    includes:
 #      after_body:
@@ -55,11 +54,11 @@ output:
 
 header-include:
     - \DeclareDelayedFloatFlavor{foo}{table}
-    
+    - \raggedbottom
 ---
 
 ```{r setup, include = FALSE}
-library("papaja")
+library(papaja)
 library(knitr)
 library(kableExtra)
 library(readxl)
@@ -69,6 +68,8 @@ library(stringr)
 library(ggplot2)
 library(mice)
 library(Amelia)
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+
 ```
 
 ```{r custom functions}
@@ -176,11 +177,35 @@ if(output == "se") {return(se_phi)}
 else {return(list(phi, se_phi))}
 }
 
+niceMLMESum <- function(REMod) {
+  data_frame(Variable = c("Intercept", "Year" , rep(NA, 4)), 
+    Estimate = c(REMod$b, rep(NA, 4)), 
+             "95% CI LB" = c(REMod$ci.lb, rep(NA, 4)), 
+             "95% CI UB" = c(REMod$ci.ub, rep(NA, 4)), 
+             SE = c(REMod$se,  rep(NA, 4)), 
+             p = c( printp(REMod$pval),  rep(NA, 4)),
+             "Random effects" = c(NA, NA, 
+                                  paste0("Project variance = ", 
+                                         printnum(REMod$sigma2[1], digits = 3), ", n = ", 
+                                         REMod$s.nlevels[1]),
+                                  paste0("Article variance = ", 
+                                         printnum(REMod$sigma2[2], digits = 3), ", n = ", 
+                                         REMod$s.nlevels[2]), 
+                                  paste0("Effect variance = ", 
+                                         printnum(REMod$sigma2[3], digits = 3), 
+                                         ", n = ", REMod$s.nlevels[3]),
+                                  paste0("QE(",REMod$k-1, ") = ", 
+                                         round(REMod$QE, 2),  ", p ", 
+                                         ifelse(REMod$QEp <.001, "< .001", 
+                                                paste("=" , round(REMod$QEp, 2))))))
+}
+
 ```
 
 ```{r analysis-preferences}
 # Seed for random number generation
 set.seed(42)
+options(knitr.kable.NA = '')
 knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
 ```
 
@@ -198,29 +223,27 @@ Given that many of the included power surveys suggest that power analysis should
 ## Research design
 The design and hypotheses, along with a detailed analysis plan for the secondary analysis, were preregistered after an initial pilot sample of 17 articles had been collected, but before any analysis or summary statistics had been calculated. The pre-registration and pilot data are available from https://osf.io/n6jfd/, see table 1 for a list of deviations from the pre-registered protocol. 
 
-Table 1. 
-
-*Deviations from preregistered protocol.*
-
+\noindent Table 1.\newline
+\noindent *Deviations from preregistered protocol.*
 ```{r table_deviations, results='asis', warning=F}
 deviations <- data.frame(
-Deviation = c("Missing means and SDs were estimated or imputed when missing",
+Deviation = c("Missing mean were estimated or imputed when missing",
 "Meta-analysis estimated means not medians",
+"A variance stabilizing transformation was used",
 "Restricted maximum likelihood estimation was used",
-"Empirical Bayes estimates and 95% credible intervals for random effects were estimated",
 "Random effects were included for area of research and original study in both primary and secondary analyses",
 "No analysis was performed examining sample size as an outcome",
 '“Sport and exercise psychology” and “communication research” were included as fields of research'),
 Explanation = c('Means and variances were imputed as large numbers of studies had some missing data. Analyses were also run without data imputation as was preregistered (see supplementary material 4).',
 'Mean levels of power were reported more often than medians, in 45 compared to 47 articles, and as the standard error of means is smaller than that of medians all else being equal.',
 'Restricted maximum likelihood estimation was used, no estimation method was preregistered.',
-'No method of examining random effects estimates was preregistered, although empirical Bayes estimates and 95% credible intervals for random effects of area of psychology were calculated following Morris, 1983 and Robinson, 1991',
+"A variance stabilizing transformation from Brown (1982) to account for the fact that power is bounded between .05 and 1",
 'No method of accounting for non-independence between articles was preregistered. The mixed effects meta-analyses reported here include random effects for study, area of research as well as each study’s estimate. The preregistered models were also performed and are reported as sensitivity analyses, see supplementary materials 4 for model output for the primary analysis and supplementary materials 5 for model output for the secondary analysis.',
 'No analysis was performed with sample size as an outcome as few articles (7) reported the average sample sizes of the investigated areas of research.',
 '“Sport and exercise psychology” and “communication research” are distinct areas of research not listed as subfields in the preregistration') )
 
 kable(deviations, booktabs = T, longtable = T) %>% 
-  kable_styling()%>%
+  kable_styling() %>%
   column_spec(c(1,2), width = c("6cm", "10cm"))
 
 ```
@@ -228,9 +251,7 @@ kable(deviations, booktabs = T, longtable = T) %>%
 ## Record identification
 See figure [PRISMA] for a PRISMA flow diagram of article identification, screening, eligibility analysis and inclusion. The sampling strategy was designed to return all reviews of the statistical power of bodies of research in psychological research (broadly defined, including educational, occupational, management, clinical, psychiatry, and neuroscience research). Power surveys were included if they systematically calculated the statistical power of statistical tests in a body of published research articles using effect sizes equivalent to Cohen’s (1988) benchmarks estimates for “small”, “medium” and “large” effects (see table 2). Articles which analysed the power of fewer than six articles were excluded to exclude articles which were not literature surveys but rather criticisms of a small body of “underpowered” research. Only articles with full texts available in English were included. 
 
-Table 2. 
-
-*Effect size benchmarks following Cohen (1977, 1988, 1992)*
+\noindent Table 2. *Effect size benchmarks following Cohen (1977, 1988, 1992)*
 ```{r es_benchmarks, fig.pos='H', out.width="\\textwidth"}
   
 ESBenchmarks <- tibble(`Type of test` = c("t test on means (d)",
@@ -244,15 +265,16 @@ kable(ESBenchmarks, booktabs = T) %>%
   add_header_above(c(" " = 1, "Effect size benchmark" = 3)) 
 
 ```
-Note. Cohen (1962) used slightly different estimates for small and large benchmarks (e.g., for t tests for mean differences d = .25 and 1 respectively) although the medium benchmarks has remained the same.
+\noindent Note. Cohen (1962) used slightly different estimates for small and large benchmarks (e.g., for t tests for mean differences d = .25 and 1 respectively) although the medium benchmarks has remained the same.
 
 On the 11th of September 2017 the PsycInfo and Medline databases for all records including the words “power\*” “sampl\*” in their title and "power analysis", "statistical Power" or "sample size" in the main text, identifying an initial 1988 articles. After de-duplication, 1526 articles remained in the database. This database is available from https://osf.io/t6jf8/. Hand searches of all identified applicable articles’ reference lists were performed to attempt to identify any papers detailing power surveys that may have been missed by these search criteria, identifying an additional 18 articles. One additional article [@szucsEmpiricalAssessmentPublished2017] was identified through a Google Scholar search of “power survey psychology”. See supplementary materials 1 for a list of articles included, and supplementary materials 2 for search criteria. All of the articles identified in this literature search which reported the proportion of examined articles which reported a power analysis were included in the secondary analysis, along with two additional articles identified through reference list searches of the articles included in the secondary analysis. 
 
 ## Abstract and full text screening
 
 1432 articles were excluded during abstract screening as they did not report examinations of the power of a body of psychology research (e.g., they discussed social power dynamics not statistical power, provided power analysis advice but did not examine a body of literature, etc). After screening of abstracts, 92 records remained and were subjected to full text screening. During full text screening, 46 articles were excluded leaving a total of 46 articles which gave mean or median power estimates for at least one of the small, medium or large effect size benchmarks. See Figure 1 for exclusion reasons at the full-text eligibility assessment phase.
+\raggedbottom
 
-```{r, out.width = "\\textwidth", fig.pos = "!h", fig.cap="Prisma flow diagram of article identification, screening and selection. Note that this diagram does note show the selection process for the secondary analysis. The secondary analysis included 17 studies, 15 of which were identified during data eligibility screening for the primary analysis, and two which were identified through reference list searches conducted during data extraction for the secondary analysis."}
+```{r, out.width = "\\textwidth", fig.pos = "H", fig.cap="Prisma flow diagram of article identification, screening and selection. Note that this diagram does note show the selection process for the secondary analysis. The secondary analysis included 17 studies, 15 of which were identified during data eligibility screening for the primary analysis, and two which were identified through reference list searches conducted during data extraction for the secondary analysis."}
 knitr::include_graphics("prisma_diagram.pdf")
 ```
 
@@ -276,7 +298,9 @@ n <- sum(is.na(data$exclude))
 
 # removing all of the exlusions
 dat <- subset(data, is.na(data$exclude))
-
+# Adding effect ID
+dat$eid <-  1:nrow(dat)
+  
 # converting to numerics
 dat$NumberOfArticles<-as.numeric(dat$NumberOfArticles)
 
@@ -297,21 +321,6 @@ for(i in unique(dat$StudyName)) {
   dat$StudyName[dat$StudyName == i] <- paste0(dat$StudyName[dat$StudyName == i], c("", " ", "  ", "    ", "     ", "       ")[1:length(dat$StudyName[dat$StudyName == i])])
 }
 
-# calculating variance and IQR 
-dat$varMedium <- dat$SDPowerAtMedium^2  
-dat$IQRMedium <- dat$ThirdQuartilePowerAtMedium - dat$FirstQuartilePowerAtMedium
-# Number missing SDs
-#sum(is.na(dat$SDPowerAtSmall) |is.na(dat$SDPowerAtMedium)| is.na(dat$SDPowerAtLarge) )
-# Number missing means
-#sum(is.na(dat$PowerAtLargeEffectMean) | is.na(dat$PowerAtMediumEffectMean) |  is.na(dat$PowerAtSmallEffectMean))
-
-# number missing means and SDs but providing SDs quartiles and medians
-# sum(!is.na(dat$PowerAtSmallEffectMedian) & is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & !is.na(dat$FirstQuartilePowerAtMedium) & !is.na(dat$ThirdQuartilePowerAtMedium))
-# n articles  missing means and SDs but providing SDs quartiles and medians
-# length(unique(dat$id[(!is.na(dat$PowerAtSmallEffectMedian) & is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & !is.na(dat$FirstQuartilePowerAtMedium) & !is.na(dat$ThirdQuartilePowerAtMedium))]))
-# N articles no variances or quartiles 
-# length(unique(dat$id[(is.na(dat$SDPowerAtMedium) & is.na(dat$SDMedAlgEstFromCDT) & !is.na(dat$PowerAtMediumEffectMedian) & is.na(dat$FirstQuartilePowerAtMedium) & is.na(dat$ThirdQuartilePowerAtMedium))]))
-
 ## Recoding areas of reserach as per the preregistration 
 # “clinical psychology/psychiatry”, “social/personality”, “education”, “general psychology” (i.e., those studies which look across fields of psychology research), “management/IO psychology”, “cognitive psychology” “neuropsychology”, “meta-analysis”
 dat$SubfieldClassification[dat$SubfieldClassification == "Cognitive neuroscience, psychology, psychiatry"] <- "General Psychology"
@@ -325,348 +334,257 @@ dat$PowerAtLargeEffectMedian[dat$id==103] <- NA
 dat$PowerAtSmallEffectMean[dat$id==103] <- NA
 dat$PowerAtLargeEffectMean[dat$id==103] <- NA
 
+
 #### Estimating missing parameters ####
 ###### Estimating Small var and sd
-## setting up col for storring means + estiamted variance 
+## setting up col for storring means + estimated variance 
 dat$estSmallMean <- NA
 dat$varSmall <- NA
 
-# calculating wan c1 estimated mean and SEs following wan et al 
-dat[c('wanc2EstMean', 'wanc2EstSE')] <- eff_est_wan_c2(a = dat$PowerSmallMin, b = dat$PowerSmallMax, q.1 =  dat$FirstQuartilePowerAtSmall, m = dat$PowerAtSmallEffectMedian, 
-                                                       q.3 =  dat$ThirdQuartilePowerAtSmall, n = dat$NumberOfArticles)
-# calculating wan c3 estimated mean and SEs following wan et al 
-dat[c('wanc3EstMean', 'wanc3EstSE')] <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtSmall, m = dat$PowerAtSmallEffectMedian, 
-                                                       q.3 =  dat$ThirdQuartilePowerAtSmall, n = dat$NumberOfArticles)
+# calculating wan c1 estimated mean and SEs following wan et al
+dat[c('wanc2EstMean', 'wanc2EstSE')] <-
+  eff_est_wan_c2(
+    a = dat$PowerSmallMin,
+    b = dat$PowerSmallMax,
+    q.1 =  dat$FirstQuartilePowerAtSmall,
+    m = dat$PowerAtSmallEffectMedian,
+    q.3 =  dat$ThirdQuartilePowerAtSmall,
+    n = dat$NumberOfArticles
+  )
 
+# calculating wan c3 estimated mean and SEs following wan et al
+dat[c('wanc3EstMean', 'wanc3EstSE')] <-
+  eff_est_wan_c3(
+    q.1 =  dat$FirstQuartilePowerAtSmall,
+    m = dat$PowerAtSmallEffectMedian,
+    q.3 =  dat$ThirdQuartilePowerAtSmall,
+    n = dat$NumberOfArticles
+  )
+
+# Counting the number of articles for which the wan estimators are used 
+nSmallC1 <- sum(!is.na(dat$wanc2EstMean) & is.na(dat$PowerAtSmallEffectMean))
+nSmallC3 <- sum(!is.na(dat$wanc3EstMean) & is.na(dat$PowerAtSmallEffectMean))
 
 # Building mean column, in order of preferences for the method that used the most inforamtion 
 # I.e., authors reported, Wan et al method c2, Wan et al, method c3
 dat$estSmallMean <- dat$wanc2EstMean 
 dat$estSmallMean[is.na(dat$estSmallMean)] <- dat$wanc3EstMean[is.na(dat$estSmallMean)]
 
-# Counting the number of articles for which the wanc3estmean is used 
-sum(!is.na(dat$estSmallMean) & (is.na(dat$PowerAtSmallEffectMean)))
-
 # calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the mean)
-absDiffSmall <- abs(dat$estSmallMean - dat$PowerAtSmallEffectMean)
+diffC3Small <- dat$estSmallMean - dat$PowerAtSmallEffectMean
 # finishing off by using all of the reported means where possible
 dat$estSmallMean[!is.na(dat$PowerAtSmallEffectMean)] <- dat$PowerAtSmallEffectMean[!is.na(dat$PowerAtSmallEffectMean)]
 
-# Estimating variance column, in order of preferences for the method that has the most inforamtion 
-# I.e., authors SD, Wan et al method c2, Wan et al, method c3,
-dat$varSmall <- (dat$wanc2EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2
-dat$varSmall[is.na(dat$varSmall)] <- ((dat$wanc3EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2)[is.na(dat$varSmall)] 
-# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the sd)
-absDiffVarSmall <- abs(dat$varSmall- dat$SDPowerAtSmall^2)
-# overridding with vars calculated from quartiles 
-dat$varSmall[!is.na(dat$SDSmallAlgEstFromCDT)] <- dat$SDSmallAlgEstFromCDT[!is.na(dat$SDSmallAlgEstFromCDT)]
-# overridding with vars reported by authors  
-dat$varSmall[!is.na(dat$SDPowerAtSmall)] <- dat$SDPowerAtSmall[!is.na(dat$SDPowerAtSmall)]^2
 
-###### Estimating medium var and sd
-## setting up col for storring means + estiamted variance 
+###### Estimating medium var and means
+## setting up col for storring means + estimated variance 
 dat$estMedMean <- NA
 dat$varMed <- NA
 
 # calculating wan c1 estimated mean and SEs following wan et al 
-dat[c('wanc2EstMean', 'wanc2EstSE')] <- eff_est_wan_c2(a = dat$PowerMedMin, b = dat$PowerMedMax, q.1 =  dat$FirstQuartilePowerAtMedium, m = dat$PowerAtMediumEffectMedian, 
-                                                       q.3 =  dat$ThirdQuartilePowerAtMedium, n = dat$NumberOfArticles)
+dat[c('wanc2EstMean', 'wanc2EstSE')] <-
+  eff_est_wan_c2(
+    a = dat$PowerMedMin,
+    b = dat$PowerMedMax,
+    q.1 =  dat$FirstQuartilePowerAtMedium,
+    m = dat$PowerAtMediumEffectMedian,
+    q.3 =  dat$ThirdQuartilePowerAtMedium,
+    n = dat$NumberOfArticles
+  )
 
-# calculating wan c3 estimated mean and SEs following wan et al 
-dat[c('wanc3EstMean', 'wanc3EstSE')] <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtMedium, m = dat$PowerAtMediumEffectMedian, 
-                                                       q.3 =  dat$ThirdQuartilePowerAtMedium, n = dat$NumberOfArticles)
+# calculating wan c3 estimated mean and SEs following wan et al
+dat[c('wanc3EstMean', 'wanc3EstSE')] <- 
+  eff_est_wan_c3(
+    q.1 =  dat$FirstQuartilePowerAtMedium,
+    m = dat$PowerAtMediumEffectMedian,
+    q.3 =  dat$ThirdQuartilePowerAtMedium,
+    n = dat$NumberOfArticles
+  )
+
+nMediumC1 <- sum(!is.na(dat$wanc2EstMean) & is.na(dat$PowerAtMediumEffectMean))
+nMediumC3 <- sum(!is.na(dat$wanc3EstMean) & is.na(dat$PowerAtMediumEffectMean))
 
 # Building mean column, in order of preferences for the method that used the most inforamtion 
 # I.e., authors reported, Wan et al method c2, Wan et al, method c3
 dat$estMedMean <- dat$wanc2EstMean 
 dat$estMedMean[is.na(dat$estMedMean)] <- dat$wanc3EstMean[is.na(dat$estMedMean)]
 # calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the mean)
-absDiffMed <- abs(dat$estMedMean - dat$PowerAtMediumEffectMean)
+diffC3Med <- dat$estMedMean - dat$PowerAtMediumEffectMean
 # finishing off by using all of the reported means where possible
 dat$estMedMean[!is.na(dat$PowerAtMediumEffectMean)] <- dat$PowerAtMediumEffectMean[!is.na(dat$PowerAtMediumEffectMean)]
 
-# Estimating variance column, in order of preferences for the method that has the most inforamtion 
-# I.e., authors SD, Wan et al method c2, Wan et al, method c3,
-dat$varMed <- (dat$wanc2EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2
-dat$varMed[is.na(dat$varMed)] <- ((dat$wanc3EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2)[is.na(dat$varMed)] 
-# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the sd)
-absDiffVarMed <- abs(dat$varMed - dat$SDPowerAtMedium^2)
-# overridding with vars calculated from quartiles 
-dat$varMed[!is.na(dat$SDMedAlgEstFromCDT)] <- dat$SDMedAlgEstFromCDT[!is.na(dat$SDMedAlgEstFromCDT)]
-# overridding with vars reported by authors  
-dat$varMed[!is.na(dat$SDPowerAtMedium)] <- dat$SDPowerAtMedium[!is.na(dat$SDPowerAtMedium)]^2
-
-###### Estimating Large var and sd
-## setting up col for storring means + estiamted variance 
+###### Estimating Large var and means
+## setting up col for storring means + estimated variance 
 dat$estLargeMean <- NA
 dat$varLarge <- NA
 
-# calculating wan c1 estimated mean and SEs following wan et al 
-dat[c('wanc2EstMean', 'wanc2EstSE')] <- eff_est_wan_c2(a = dat$PowerLargeMin, b = dat$PowerLargeMax, q.1 =  dat$FirstQuartilePowerAtLarge, m = dat$PowerAtLargeEffectMedian, 
-                                                       q.3 =  dat$ThirdQuartilePowerAtLarge, n = dat$NumberOfArticles)
+# calculating wan c1 estimated mean and SEs following wan et al
+dat[c('wanc2EstMean', 'wanc2EstSE')] <-
+  eff_est_wan_c2(
+    a = dat$PowerLargeMin,
+    b = dat$PowerLargeMax,
+    q.1 =  dat$FirstQuartilePowerAtLarge,
+    m = dat$PowerAtLargeEffectMedian,
+    q.3 =  dat$ThirdQuartilePowerAtLarge,
+    n = dat$NumberOfArticles
+  )
 
-# calculating wan c3 estimated mean and SEs following wan et al 
-dat[c('wanc3EstMean', 'wanc3EstSE')] <- eff_est_wan_c3(q.1 =  dat$FirstQuartilePowerAtLarge, m = dat$PowerAtLargeEffectMedian, 
-                                                       q.3 =  dat$ThirdQuartilePowerAtLarge, n = dat$NumberOfArticles)
+# calculating wan c3 estimated mean and SEs following wan et al
+dat[c('wanc3EstMean', 'wanc3EstSE')] <-
+  eff_est_wan_c3(
+    q.1 =  dat$FirstQuartilePowerAtLarge,
+    m = dat$PowerAtLargeEffectMedian,
+    q.3 =  dat$ThirdQuartilePowerAtLarge,
+    n = dat$NumberOfArticles
+  )
+
+# Counting how many articles use the WAN estimators
+nLargeC1 <- sum(!is.na(dat$wanc2EstMean) & is.na(dat$PowerAtLargeEffectMean))
+nLargeC3 <- sum(!is.na(dat$wanc3EstMean) & is.na(dat$PowerAtLargeEffectMean))
 
 # Building mean column, in order of preferences for the method that used the most inforamtion 
 # I.e., authors reported, Wan et al method c2, Wan et al, method c3
 dat$estLargeMean <- dat$wanc2EstMean 
 dat$estLargeMean[is.na(dat$estLargeMean)] <- dat$wanc3EstMean[is.na(dat$estLargeMean)]
-# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the mean)
-absDiffLarge <- abs(dat$estLargeMean - dat$PowerAtLargeEffectMean)
+# calculating the error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the mean)
+diffC3Large <- dat$estLargeMean - dat$PowerAtLargeEffectMean
 # finishing off by using all of the reported means where possible
 dat$estLargeMean[!is.na(dat$PowerAtLargeEffectMean)] <- dat$PowerAtLargeEffectMean[!is.na(dat$PowerAtLargeEffectMean)]
-
-# Estimating variance column, in order of preferences for the method that has the most inforamtion 
-# I.e., authors SD, Wan et al method c2, Wan et al, method c3,
-dat$varLarge <- (dat$wanc2EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2
-dat$varLarge[is.na(dat$varLarge)] <- ((dat$wanc3EstSE * sqrt(as.numeric(dat$NumberOfArticles)))^2)[is.na(dat$varLarge)] 
-# calculating the mean absolute error for Wan's methods the ? articles for which this is possible (i.e., where these values can be calculated and the authors reported the sd)
-absDiffVarLarge <- abs(dat$varLarge- dat$SDPowerAtLarge^2)
-# overridding with vars calculated from quartiles 
-dat$varLarge[!is.na(dat$SDLargeAlgEstFromCDT)] <- dat$SDLargeAlgEstFromCDT[!is.na(dat$SDLargeAlgEstFromCDT)]
-# overridding with vars reported by authors  
-dat$varLarge[!is.na(dat$SDPowerAtLarge)] <- dat$SDPowerAtLarge[!is.na(dat$SDPowerAtLarge)]^2
-dat$varLarge[dat$varLarge == 0] <- NA
-
 
 ## putting Means estimated from frequency plots into the appropraite places 
 dat[c("estSmallMean", "estMedMean", "estLargeMean")][dat$id == 62,] <- c(0.2456618, 0.5399306, 0.67625)
 
-######## Missing data estimation #########
-#### medium
-replacementVis <- mean(dat$varMed, na.rm = T)
-dat$varMed_MeanImpute <- dat$varMed
-dat$varMed_MeanImpute[is.na(dat$varMed)] <- replacementVis
-# Median imputation
-replacementVis <- median(dat$varMed, na.rm = T)
-dat$varMed_MedianImpute <- dat$varMed
-dat$varMed_MedianImpute[is.na(dat$varMed)] <- replacementVis
-# Min imputation
-replacementVis <- min(dat$varMed, na.rm = T)
-dat$varMed_MinImpute <- dat$varMed
-dat$varMed_MinImpute[is.na(dat$varMed)] <- replacementVis
-# Max imputation
-replacementVis <- max(dat$varMed, na.rm = T)
-dat$varMed_MaxImpute <- dat$varMed
-dat$varMed_MaxImpute[is.na(dat$varMed)] <- replacementVis
-
-##### data imputation small
-replacementVis <- mean(dat$varSmall, na.rm = T)
-dat$varSmall_MeanImpute <- dat$varSmall
-dat$varSmall_MeanImpute[is.na(dat$varSmall)] <- replacementVis
-# Median imputation
-replacementVis <- median(dat$varSmall, na.rm = T)
-dat$varSmall_MedianImpute <- dat$varSmall
-dat$varSmall_MedianImpute[is.na(dat$varSmall)] <- replacementVis
-# Min imputation
-replacementVis <- min(dat$varSmall, na.rm = T)
-dat$varSmall_MinImpute <- dat$varSmall
-dat$varSmall_MinImpute[is.na(dat$varSmall)] <- replacementVis
-# Max imputation
-replacementVis <- max(dat$varSmall, na.rm = T)
-dat$varSmall_MaxImpute <- dat$varSmall
-dat$varSmall_MaxImpute[is.na(dat$varSmall)] <- replacementVis
-
-#### Data imputation Large 
-replacementVis <- mean(dat$varLarge, na.rm = T)
-dat$varLarge_MeanImpute <- dat$varLarge
-dat$varLarge_MeanImpute[is.na(dat$varLarge)] <- replacementVis
-# Median imputation
-replacementVis <- median(dat$varLarge, na.rm = T)
-dat$varLarge_MedianImpute <- dat$varLarge
-dat$varLarge_MedianImpute[is.na(dat$varLarge)] <- replacementVis
-# Min imputation
-replacementVis <- min(dat$varLarge, na.rm = T)
-dat$varLarge_MinImpute <- dat$varLarge
-dat$varLarge_MinImpute[is.na(dat$varLarge)] <- replacementVis
-# Max imputation
-replacementVis <- max(dat$varLarge, na.rm = T)
-dat$varLarge_MaxImpute <- dat$varLarge
-dat$varLarge_MaxImpute[is.na(dat$varLarge)] <- replacementVis
-
-
-#### Calculating sampling variances ####
-# Calculating the sampling variances medium with all data imputation methods
-dat$samplingVarMed_Mean <- dat$varMed_MeanImpute/dat$NumberOfArticles
-dat$samplingVarMed_Med <- dat$varMed_MedianImpute/dat$NumberOfArticles
-dat$samplingVarMed_Min <- dat$varMed_MinImpute/dat$NumberOfArticles
-dat$samplingVarMed_Max <- dat$varMed_MaxImpute/dat$NumberOfArticles
-
-# Calculating the sampling variances small
-dat$samplingVarSmall_Mean <- dat$varSmall_MeanImpute/dat$NumberOfArticles
-dat$samplingVarSmall_Med <- dat$varSmall_MedianImpute/dat$NumberOfArticles
-dat$samplingVarSmall_Min <- dat$varSmall_MinImpute/dat$NumberOfArticles
-dat$samplingVarSmall_Max <- dat$varSmall_MaxImpute/dat$NumberOfArticles
-
-# Calculating the sampling variances large
-dat$samplingVarLarge_Mean <- dat$varLarge_MeanImpute/dat$NumberOfArticles
-dat$samplingVarLarge_Med <- dat$varLarge_MedianImpute/dat$NumberOfArticles
-dat$samplingVarLarge_Min <- dat$varLarge_MinImpute/dat$NumberOfArticles
-dat$samplingVarLarge_Max <- dat$varLarge_MaxImpute/dat$NumberOfArticles
-
-# same without imputed data
-dat$samplingVarSmall_NoImputedData <- (dat$SDPowerAtSmall^2)/dat$NumberOfArticles
-dat$samplingVarMed_NoImputedData <- (dat$SDPowerAtMedium^2)/dat$NumberOfArticles
-dat$samplingVarLarge_NoImputedData <- (dat$SDPowerAtLarge^2)/dat$NumberOfArticles
-
 ```
 
-There were a total of 53 year ranges (henceforth “cases”) for which mean or median power estimates were given for at least one of the small, medium or large effect size benchmarks in the 46 included articles. In eleven of these cases, no means were given for at least one of Cohen’s 1988 benchmark effect sizes (including Cohen, 1962, which used different “small” and “medium” benchmark effect sizes), although medians and interquartile ranges were provided. In total of 24 cases no variances or standard deviations were given for at least one of the power estimates. Several methods were used to estimate these missing values. For nine articles (including one which only provided a frequency table at the small benchmark (Cashen & Geiger, 2004)) variances were estimated using the cumulative frequency tables reported in the original articles as 
+There were a total of `r nrow(dat)` year ranges (henceforth “cases”) for which mean or median power estimates were given for at least one of the small, medium or large effect size benchmarks in the `r length(unique(dat$id))` included articles. In `r sum(!complete.cases( data.frame(dat$PowerAtLargeEffectMean, dat$PowerAtMediumEffectMean, dat$PowerAtSmallEffectMean)))` of these cases, no means were reported for at least one of Cohen’s 1988 benchmark effect sizes (including Cohen, 1962, which used different “small” and “medium” benchmark effect sizes). although medians and interquartile ranges were provided. 
 
-$$\sigma^2 = \frac{\Sigma(fx^2)}{n} \bar{x}^2$$
+```{r}
+source("Analysis/Estimating means and SDs from freq tables.R")
+```
 
-f being the frequency of occurrences within each bin, x being the mid interval value (e.g., for the bin .1 - .19, the mid interval value would be .145), n being the total number of values included and $\bar{x}$ being the estimated mean value calculated as 
+For two power surveys (Haase, 1974; Woolley, 1983) mean power levels were not reported, but frequency tables showing the number of articles achieving different levels of power at each effect size benchmark were presented. For those articles we estimated the mean power as the weighted average of the mid-interval values.
+$$\bar{x} = \frac{\Sigma(f\hat{x})}{\Sigma (f)}$$
+$f$ being the frequency within a particular bin and $\hat{x}$ being the mid-interval value (e.g., for the bin .1 - .19, the mid interval value would be .145). In order to validate this mean estimation method, the difference between the estimated means and the reported means was calculated for `r sum(!is.na(meanDiffs))` frequency tables from `r nrow(meanDiffs)` which reported mean power and frequency tables, giving a mean absolute error of just `r meanAbsDiff` (mean error = `r mean(unlist(meanDiffs), na.rm = T)` standard deviation of `r sd(unlist(meanDiffs), na.rm = T)`. An r script with the data extracted from the frequency tables and the working for these estimates can be found at https://osf.io/tdj6b/.
 
-$$\bar{x} = \frac{\Sigma(fx)}{\Sigma (f)}$$
-
-An r script with the data extracted from the frequency tables and the working for these estimates can be found at https://osf.io/7ncke/. This method was also used to estimate the means of two articles (Haase, 1974; Woolley, 1983) which did not provide means or variances (also included in the count above), but which did provide frequency tables. In order to validate this mean estimation methods, the difference between the estimated means and the reported means was calculated for all papers for which variances were estimated using frequency tables. The mean absolute difference between the 22 estimated means and their reported values was just .022.
-
-For six cases at the small and the medium effect size benchmarks and five at the large benchmark, missing means were estimated from reported medians and standard deviations using @wanEstimatingSampleMean2014’s method (equation C3) using reported the medians and interquartile values (using the R package varameta; @greyVerametaPackageVersion2019). In order to validate this approach, the means for all articles which reported medians, quartiles as well as means were calculated (18 articles reporting 52 estimated means), which lead to a mean absolute error of .04.
-
-The range and interquartile ranges of power at the small and medium benchmarks was extracted from plots in one article (Smith, Hardy, & Gammell, 2011) for use in Wan and colleagues (2014) estimator using R’s ‘locator’ function [@poisotGettingDataImage2010], see https://osf.io/7f2q9/ for the code used. In order to validate the accuracy of this extraction method, median power levels for the medium and small effect size benchmarks for each year were also extracted and compared to the estimates provided in the paper’s text; all six extracted values were within 0.005 of the values reported the text. 
-
-Two power surveys had medians and quartiles which were identical at the large effect size benchmark (.99) which would lead to an estimated variance of zero using the Wan and colleagues’ (2014) method. For these two articles, and three remaining articles which did not report variances, standard deviations, interquartile ranges, or frequency tables, we imputed the variances using the mean variance of all other studies in the reported analyses. To assess the sensitivity of the presented results to this imputation rule all models were run using alternative variance imputation rules including multiple imputation, using the median, minimum, and using the maximum of the other studies’ variances instead of the mean. None of the alternative imputation decisions substantially altered any of the reported results (see “Sensitivity Analyses” below for more detail). At the end of data estimation and imputation there were 51 cases from 44 articles with means and variances at the small benchmark, 53 cases from 46 articles at the medium benchmark, and 49 cases from 42 articles at the large benchmark.
+For five cases `r # i.e., (nMediumC3==5 & nMediumC3 == 5 & nLargeC3)`at the small, medium, and large effect size benchmarks missing means were estimated using reported the medians and interquartile power estimates following @wanEstimatingSampleMean2014’s method (equation C3), using functions from the R package varameta [@greyVerametaPackageVersion2019]. In order to validate this approach, the means for all articles which reported medians, quartiles as well as means were calculated (`r length(unique ( dat$id[(!is.na(diffC3Large) | !is.na(diffC3Med) | !is.na(diffC3Large))]))` articles reporting `r sum(!is.na(c(diffC3Large, diffC3Med, diffC3Large)))` estimated means), which lead to a mean absolute error of `r mean(abs(c(diffC3Large, diffC3Med, diffC3Large)), na.rm=T)` (mean error = `r mean(c(diffC3Large, diffC3Med, diffC3Large), na.rm=T)`, sd = `r sd(c(diffC3Large, diffC3Med, diffC3Large), na.rm=T)`).
 
 ## Analysis
 
-All data-analysis was conducted using R 3.5.1 [@rdevelopmentcoreteamLanguageEnvironmentStatistical2017], and meta-analyses were performed using the metafor package (version 2.0.0; @R-metafor). Th Rmarkdown document  including all code and all data required to produce this paper document are available at https://osf.io/as7md/.
+All data-analysis was conducted using R 3.5.1 [@rdevelopmentcoreteamLanguageEnvironmentStatistical2017], and meta-analyses were performed using the metafor package [version 2.0.0; @R-metafor]. The R Markdown document including all code and the data required to reproduce this paper document are available from https://osf.io/as7md/.
 
 At each benchmark level of power (small, medium, and large) a mixed effects meta-regression was performed. 
+$$power_j=\gamma_0+\gamma_1Year_j+u_{area}+u_{survey}+u_{id}+e_j$$
+This analysis predicts estimated power at each benchmark ($power_j$) with an overall intercept ($\gamma_0$), and a fixed effect for year $\gamma_1$. Random effects were included for the estimate ($u_{id}$), survey ($u_{survey}$), and area of psychology research ($u_{area}$). Random effects were included to account for non-independence between studies sampled from the same fields of research (e.g., clinical psychology or IO psychology), for non-independence in cases where surveys reported multiple estimates (e.g., when a power survey reported multiple power estimates for different year ranges), and at the effect level to make this a random effects meta-analysis. The variable year was mean centered, making the overall intercept interpretable as the estimated mean power at the mean examined year included in this study (1985). When a study covered a range of years, the mean year of the range of studies included in each set was entered as a predictor in the meta-regression. All analyses used restricted maximum likelihood estimation. 
 
-$$power_j=\gamma_0+\gamma_1Year+u_{area}+u_{survey}+u_{id}+e_j$$
+Because statistical power is bounded between .05 and 1, we used a variance stabilizing transformation analogous to the fisher r-to-z transformation to convert the mean level of power at each benchmark effect size into an unbounded quantity ($\phi$) following @brownCovarianceStructures1982.
+$$\phi = -\log{\bigg( \frac{1}{\hat{\theta}} - 1\bigg)}$$
+In the above, $\hat\theta$ is the estimated mean statistical power at a given effect size benchmark. The standard error of each estimate was calculating using the following. 
+$$ \sigma^2 = \sqrt{ \frac{ \hat{\theta}(1-\hat{\theta}) / n}{ \hat{\theta}(1-\hat{\theta})}} $$
 
-This analysis predicts estimated power at each benchmark ($power_j$) with an overall intercept ($\gamma_0$), and a fixed effect for year $\gamma_1$. Random effects were included for each estimate ($u_{id}$), survey ($u_{survey}$), and area of psychology research ($u_{area}$), to account for non-independence of sub-studies within articles (e.g., when a power survey reported multiple power estimates for different year ranges), and when studies covered the same fields of research (e.g., clinical psychology). The year studied in each power survey was included as a fixed effect. The variable year was mean centered, making the overall intercept interpretable as the estimated mean power at the mean examined year included in this study (1985). When a study covered a range of years, the mean year of the range of studies included in each set was entered as a predictor in the meta-regression. Sampling variances were calculated as the sample variance divided by the number of articles included in each power survey. All analyses used restricted maximum likelihood estimation. Mean statistical power was treated as a simple mean despite the fact that it is bounded between 0 and 1, a reasonable approximation as each power estimate included in this study is a mean of a set of individual power estimates, not a proportion or fraction. An additional, non-preregistered exploratory analysis was performed to obtain empirical Bayes estimates and 95% credible intervals for the random effect of area of psychology (using the methods outlined in @morrisParametricEmpiricalBayes1983). 
+Where $\hat\theta$ is again the estimated mean statistical power from each survey and $n$ is the number of studies examined in each power survey. All estimates are back-transformed to raw estimated statistical power unless otherwise stated. 
 
-```{r, , message=FALSE, warning=FALSE, echo = FALSE}
-# MEDIUM EFFECT SIZE BENCHMARK
-######## model accounting for area of research # Models with means 
-mediumMod <- rma.mv(yi = estMedMean, V = samplingVarMed_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
+# Results
 
-# ICCs
-mediumModICCSubfield <- round(mediumMod$sigma2[1] / sum(mediumMod$sigma2), 3)
-mediumModICCArticle <-  round(mediumMod$sigma2[2] / sum(mediumMod$sigma2), 3)
-mediumModICCEstimate <- round(mediumMod$sigma2[3] / sum(mediumMod$sigma2), 3)
-
-#### SMALL EFFECT SIZE BENCHMARK
-smallMod <- rma.mv(yi = estSmallMean, V = samplingVarSmall_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
-# ICCs
-smallModICCSubfield <- round(smallMod$sigma2[1] / sum(smallMod$sigma2), 3)
-smallModICCArticle <- round(smallMod$sigma2[2] / sum(smallMod$sigma2), 3)
-smallModICCEstimate <- round(smallMod$sigma2[3] / sum(smallMod$sigma2), 3)
-
-#### LARGE EFFECT SIZE BENCHMARK
-# Models with mean imputation
-largeMod <- rma.mv(yi = estLargeMean, V = samplingVarLarge_Mean, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
-# ICCs
-largeModICCSubfield <- round(largeMod$sigma2[1] / sum(largeMod$sigma2), 3)
-largeModICCArticle <- round(largeMod$sigma2[2] / sum(largeMod$sigma2), 3)
-largeModICCEstimate <- round(largeMod$sigma2[3] / sum(largeMod$sigma2), 3)
-
-```
-
-## Sensitivity analyses
-To investigate whether the results are sensitive to data imputation and estimation methods, analyses were also performed excluding including any studies for which any data had to be estimated or imputed, using different data imputation rules (i.e., the median, minimum and maximum variance imputation instead of mean imputation, and without random effects for estimate, study or field of research). A further sensitivity analysis was performed using multiple imputation to estimate variances using predictive mean matching (imputing variances for all articles where variances or standard deviations were not directly reported in the paper). None of these changes altered the effect of year by more than .002, altered the intercept parameter by more than .04, changed any parameters statistical significance at the .05 level, or provided results which would lead to substantially different conclusions being drawn. See Supplementary Materials 3 for coefficient values produced under these different imputation rules.
-
-Leave one out cross validation was used to assess whether any individual article has a large impact on the model coefficient values. No included articles changed the estimated effect of time by more than .004. Intercept estimates did not change by more than .018 in the small or medium benchmark, but the removal of Woods et al., (2006) at the large effect size benchmark increased the intercept parameter by .05. As preregistered, this article has been left in for the results reported below.
-
-```{r Sensativity analyses accounting for boundedness, message=FALSE, warning=FALSE, echo = FALSE}
+```{r}
 ## Setting up the back transformation function
+backtransform <- function(theta) {1/(1 + exp(-theta))}
+
 convertModelOutput <- function(brownModel) {
-be <- 1/(1 + exp(-brownModel$b[1]))
-ll <- 1/(1 + exp(-brownModel$ci.lb[1]))
-ul <- 1/(1 + exp(-brownModel$ci.ub[1]))
+be <- backtransform( brownModel$b[1])
+ll <- backtransform(brownModel$ci.lb[1])
+ul <- backtransform(brownModel$ci.ub[1])
 
-diferenceBE <- be - (1/(1 + exp(- brownModel$b[1] + brownModel$b[2])))
+# This calculates the best estimate difference CIs differences at one year from the mean included year
+differenceBE <- be - (1/(1 + exp(- brownModel$b[1] + 10*brownModel$b[2])))
 # Estimated differnece between the best estimate and one year, lower bound 
-diferenceLL <- be  - (1/(1 + exp(-  brownModel$b[1] + brownModel$ci.lb[2])))
-# Estiamted difference beween the best estimate and one year later, upper bound
-diferenceUL <- be - (1/(1 + exp(- brownModel$b[1] + brownModel$ci.ub[2])))
+differenceLL <- be  - (1/(1 + exp(-  brownModel$b[1] + 10*brownModel$ci.lb[2])))
+# estimated difference beween the best estimate and one year later, upper bound
+differenceUL <- be - (1/(1 + exp(- brownModel$b[1] + 10*brownModel$ci.ub[2])))
 
-return(tibble(be = be, ll =  ll, ul = ul, diferenceBE = diferenceBE, diferenceLL = diferenceLL, diferenceUL = diferenceUL))
+return(tibble(be = be, ll =  ll, ul = ul, differenceBE = differenceBE, differenceLL = differenceLL, differenceUL = differenceUL))
 }
 
-compareModels <- function(modelBrown, model) {
-  modelOut <- convertModelOutput( modelBrown )
-  differenceInter <- modelOut$be - model$b[1]
-  differenceCoff <-  modelOut$diferenceBE - model$b[2]
-  maxDiffInterceptCoef <- max(abs(c(modelOut$ll[1] - model$ci.lb[1], modelOut$ul[1] - model$ci.ub[1])))
-    maxCIYear <- max(abs(c(modelOut$diferenceLL[1] - model$ci.lb[2], modelOut$diferenceUL[1] -  model$ci.ub[2])))
-    return(tibble(differenceInter,differenceCoff, maxCIYear))
-}
-
-### Using Brown's formula 
+### Using Brown's formula
 ### Small
 estimatesSmall <- brown_case_3(theta = dat$PowerAtSmallEffectMean,
-             n = dat$NumberOfArticles)
+                               n = dat$NumberOfArticles)
 dat$brownMeanSmall <- estimatesSmall[[1]]
 dat$brownMeanSE <- estimatesSmall[[2]]
 
-brownMeanSmall <- rma.mv(yi = brownMeanSmall, V = brownMeanSE^2, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
+# the optimiser is set here because sometimes the default model estimator can fail 
+brownSmall <-
+  rma.mv(
+    yi = brownMeanSmall,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),
+    slab = StudyName,
+    data = dat, control=list(optimizer="optim", optmethod="Nelder-Mead"))
 
-brownoutSmall <- convertModelOutput(brownMeanSmall)
+brownoutSmall <- convertModelOutput(brownSmall)
 
 ### Medium
 estimatesMed <- brown_case_3(theta = dat$PowerAtMediumEffectMean,
-             n = dat$NumberOfArticles)
+                             n = dat$NumberOfArticles)
 
 dat$brownMeanMed <- estimatesMed[[1]]
 dat$brownMeanSE <- estimatesMed[[2]]
 
-brownMeanMed <- rma.mv(yi = brownMeanMed, V = brownMeanSE^2, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
-BrownModelMedOut <-convertModelOutput(brownMeanMed)
+brownMed <-
+  rma.mv(
+    yi = brownMeanMed,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),
+    slab = StudyName,
+    data = dat
+  )
+brownoutMed <- convertModelOutput(brownMed)
 
 ### Large
 estimatesLarge <- brown_case_3(theta = dat$PowerAtLargeEffectMean,
-             n = dat$NumberOfArticles)
+                               n = dat$NumberOfArticles)
 dat$brownMeanLarge <- estimatesLarge[[1]]
 dat$brownMeanSE <- estimatesLarge[[2]]
 
-brownMeanLarge <- rma.mv(yi = brownMeanLarge, V = brownMeanSE^2, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
+brownLarge <-
+  rma.mv(
+    yi = brownMeanLarge,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),
+    slab = StudyName,
+    data = dat
+  )
 
-brownoutLarge <- convertModelOutput(brownMeanLarge)
-# Checking that the bounds don't change around the mean
-modelComparison <- compareModels(brownMeanSmall, smallMod)
-modelComparison[2,] <- compareModels(brownMeanMed, mediumMod)
-modelComparison[3,] <- compareModels(brownMeanLarge, largeMod)
-
-# Weighting by number of articles
-# Estimating these with added year and field of research 
-mediumWeightedYearField <- rma.mv(yi = estMedMean, V = dat$samplingVarMed_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
-smallWeightedYearField <-  rma.mv(yi = estSmallMean, V = dat$samplingVarSmall_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
-largeWeightedYearField <-  rma.mv(yi = estLargeMean, V = dat$samplingVarLarge_Mean, random = list(~ 1 | id, ~ 1 | SubfieldClassification), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName, W = dat$NumberOfArticles)
-
-## Estimating differences caused by weigting by number of studies 
-mediumDiffs <- mediumWeightedYearField$b - mediumMod$b
-smallDiffs <- smallWeightedYearField$b - smallMod$b
-largeDiffs <- largeWeightedYearField$b - largeMod$b
-
-modelComparison[c(4,5,6),1] <- c(mediumDiffs[1], smallDiffs[1], largeDiffs[1])
-modelComparison[c(4,5,6),2] <- c(mediumDiffs[2], smallDiffs[2], largeDiffs[2])
-modelComparison[c(4,5,6),3] <-  c(max(abs(mediumWeightedYearField$ci.lb - mediumMod$ci.lb)), 
-max(abs(smallWeightedYearField$b - smallMod$b)),
-max(abs(largeWeightedYearField$b - largeMod$b)))
-
+brownoutLarge <- convertModelOutput(brownLarge)
 ```
 
-Because power is bounded between 0.05 and 1 for all included studies, studies which found estimated mean powers that are close to either bound are expected to have lower variances, and that their variances are likely to be associated with their mean value.  This means that treating these values as unbounded means and using the typical inverse variance weighting approach to meta-analysis may systmatically overweight studies which find power estimates towards either bound [@hedgesModelingPublicationSelection1992]. In order to account for this issue, meta-analyses were also run weighting by the number of articles included in papers following @hunterMethodsMetaAnalysisCorrecting2004, and separately using a variance stabelising transformation following @brownCovarianceStructures1982. See Supplementary Materials [Sensativity analysis] for full model output from these models. The results from these models would not lead to any substantively different conclusions being drawn, with similar levels of precision in the model estimates, the estimated change by year differing by less than `r max(modelComparison$differenceCoff)` (calculated as the estimated change in mean power for a one unit chagnge from the intercept for the variance stabalising model, where the change is no longer linear in untransformed units), and estimated mean power changing by less than `r max(modelComparison$differenceInter[c(1,4)])`,  `r max(modelComparison$differenceInter[c(2,5)])`,  `r max(modelComparison$differenceInter[c(3,6)])` at the small, medium and large effect size benchmarks respectively. Below, we present the models calculated using the untransformed means as the substantive interpretation of these results does not differ, and as the model coefficents are directly interpretable as the mean power over this time period and as the expected change per year.
 
-# Results
-The mixed effects meta-regression intercept parameter suggests the mean power of psychology across this time period is .23 (95% CIs [.17, .29]) for ‘small’ effects, .62 (95% CIs [.54, .70]) for ‘medium’ effects and .80 (95% CIs [.68, .92]) for ‘large’ effects following Cohen’s effect size benchmarks. The estimated effect of time is negligible at all three benchmarks, 0.000 (95% CIs [-0.003, 0.003]), .001 (95% CIs [-0.002, 0.004]) and -.001 (95% CIs [-0.002, 0.001]) at the small, medium and large benchmarks respectively, with these values representing the estimated change in power per year. There is substantial heterogeneity across fields of research, with estimated standard deviations in subfield means of .05, .08, and .15 at the small medium and large benchmarks respectively. See Tables [BLUPS] – [BLUPL] for empirical Bayes estimates of the random effects for each included subfield. In interpreting the empirical Bayes estimates of random effects for area of psychology at each benchmark, it’s important to emphasize the degree of imprecision in these estimates. This data doesn’t provide strong evidence to claim that any particular subfield has substantially higher or lower power than any other. See Tables [Meta-regression primary small]-[Meta-regression primary large] for full model output, variance estimates and QE tests for excess heterogeneity. 
+The mixed effects meta-regression intercept parameter suggests the mean power of psychology across this time period is `r brownoutSmall$be` (95% CI [`r brownoutSmall$ll`, `r brownoutSmall$ul`]) for ‘small’ effects, `r brownoutMed$be` (95% CI [`r brownoutMed$ll`, `r brownoutMed$ul`])  for ‘medium’ effects, and `r brownoutLarge$be` (95% CI [`r brownoutLarge$ll`, `r brownoutLarge$ul`]) for 'large' effects following Cohen’s effect size benchmarks.
+
+The estimated effect of time is negligible at all three benchmarks, in transformed units, `r   printnum(brownSmall$b[2], digits = 3)` (95% CI [`r printnum(brownSmall$ci.lb[2], digits = 3)`, `r printnum(brownSmall$ci.ub[2], digits = 3)`]) for ‘small’ effects,  `r printnum(brownSmall$b[2], digits = 3)` (95% CI [`r printnum( brownSmall$ci.lb[2], digits = 3)`, `r printnum(brownSmall$ci.ub[2], digits = 3)`])  for ‘medium’ effects, and  `r printnum(brownSmall$b[2], digits = 3)` (95% CI [`r  printnum(brownSmall$ci.lb[2], digits = 3)`, `r printnum(brownSmall$ci.ub[2], digits = 3)`])  for 'large' effects following Cohen’s effect size benchmarks. Although this change is non-linear when back transformed to Statistical Power, it represents an extremely small estimated change across the range of years covered in this study. 
+
+For example, we can look at the predicted change in statistical power per decade from the overall intercept (a value which represents an estimate of the mean level of statistical power in psychology at the mean year included in the power surveys, 1985). This gives us an estimated change per decade of just `r printnum(brownoutSmall$differenceBE, digits = 3)` (95% CI [`r printnum(brownoutSmall$differenceLL, digits = 3)`, `r printnum(brownoutSmall$differenceUL, digits = 3)`]) at the ‘small’ benchmark, `r printnum(brownoutMed$differenceBE, digits = 3)` (95% CI [`r printnum(brownoutMed$differenceLL, digits = 3)`, `r printnum(brownoutMed$differenceUL, digits = 3)`]) at the ‘medium’ benchmark, and `r printnum(brownoutLarge$differenceBE, digits = 3)` (95% CI [`r printnum(brownoutLarge$differenceLL, digits = 3)`, `r printnum(brownoutLarge$differenceUL, digits = 3)`]) for 'large' effects following Cohen’s effect size benchmarks.
 
 \newpage
 
-```{r forestplot small, dpi=300, fig.height= 17, fig.width= 13}
-res <- smallMod
+```{r, dpi=300, fig.height= 15, fig.width= 13, out.width = "\\textwidth", fig.pos = "H", fig.cap="Forest plot of studies of the power of the power of psychology research literatures at Cohen’s (1988) small effect sizes. The polygon depicts reports the model intercept."}
+res <- brownSmall
 par(mar=c(4,4,1,2), font = 1)
-forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1),
+forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1), 
+       transf = backtransform,
        ilab = data.frame(dat$YearsStudied, dat$SubfieldClassification),
        ilab.xpos=c(-.16, -.58), cex=1.1, ylim=c(-1, res$k+3),
        xlab="Estimated power", mlab="", addfit = F, showweights = F)
 
 
-addpoly(x =  res$b[1], ci.lb = res$ci.lb[1], ci.ub = res$ci.ub[1], cex = 1.1)
+addpoly(x =  backtransform(res$b[1]), 
+        ci.lb = backtransform(res$ci.lb[1]),
+        ci.ub = backtransform(res$ci.ub[1]), cex = 1.1)
 
 # Bold font 
 par(font=2)
@@ -678,47 +596,22 @@ text(-.18, res$k+2, c("Years sampled"), cex = 1.25)
 par(font=1)
 ```
 
-*Figure 2.* Forest plot of studies of the power of the power of psychology research literatures at Cohen’s (1988) small effect sizes. The polygon depicts reports the model intercept. NAs included for studies that did not estimate power at this effect size benchmark but did for the medium or large benchmarks.
-
-
 
 \newpage
 
-```{r forestplot medium, dpi=300, fig.height= 17, fig.width= 13}
+```{r, dpi=300, fig.height= 15, fig.width= 13, out.width = "\\textwidth", fig.pos = "H", fig.cap="Forest plot of studies of the power of the power of psychology research literatures at Cohen’s (1988) medium effect sizes. The polygon depicts reports the model intercept."}
+res <- brownMed
 par(mar=c(4,4,1,2), font = 1)
-res <- mediumMod
-forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1),
-       ilab = data.frame(dat$YearsStudied, dat$SubfieldClassification),
-       ilab.xpos=c(-.16, -.58), cex=1.1, ylim=c(-1, length(dat$id)+3),
-       xlab="Estimated power", mlab="", addfit = F, showweights = F)
-
-
-addpoly(x =  res$b[1], ci.lb = res$ci.lb[1], ci.ub = res$ci.ub[1], cex = 1.1)
-
-# Bold font 
-par(font=2)
-### add column headings to the plot
-text(-1.3, length(dat$id)+2, c("Author(s) (year)"), cex = 1.25)
-text(-.58, length(dat$id)+2, c("Subfield"), cex = 1.25)
-text(-.18, length(dat$id)+2, c("Years sampled"), cex = 1.25)
-# normal font 
-par(font=1)
-```
-
-*Figure 3.* Forest plot of studies of the power of the power of psychology research literatures at Cohen’s (1988) medium effect sizes. The polygon depicts reports the model intercept. NAs included for studies that did not estimate power at this effect size benchmark but did for the medium or large benchmarks.
-
-\newpage
-
-```{r forestplot large, dpi=300, fig.height= 17, fig.width= 13}
-res <- largeMod
-par(mar=c(4,4,1,2), font = 1)
-forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1),
+forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1), 
+       transf = backtransform,
        ilab = data.frame(dat$YearsStudied, dat$SubfieldClassification),
        ilab.xpos=c(-.16, -.58), cex=1.1, ylim=c(-1, res$k+3),
        xlab="Estimated power", mlab="", addfit = F, showweights = F)
 
 
-addpoly(x =  res$b[1], ci.lb = res$ci.lb[1], ci.ub = res$ci.ub[1], cex = 1.1)
+addpoly(x =  backtransform(res$b[1]), 
+        ci.lb = backtransform(res$ci.lb[1]),
+        ci.ub = backtransform(res$ci.ub[1]), cex = 1.1)
 
 # Bold font 
 par(font=2)
@@ -730,41 +623,54 @@ text(-.18, res$k+2, c("Years sampled"), cex = 1.25)
 par(font=1)
 ```
 
-*Figure 4.* Forest plot of studies of the power of the power of psychology research literatures at Cohen’s (1988) large effect sizes. The polygon depicts reports the model intercept. NAs included for studies that did not estimate power at this effect size benchmark but did for the medium or large benchmarks.
+\newpage
 
-\newpage 
-
-Table [BLUPS]. 
-*Empirical Bayes estimates and 95% credible intervals for random effects of area of psychology included in the current study at the large benchmarks, which are equivalent to 95% confidence intervals assuming that the studies are a random sample from a population with normally distributed average effect size differences.*
-```{r bloop small, out.width = "\\textwidth", fig.pos = "!h"}
-kable(round(ranef(smallMod)$SubfieldClassification, 3))
-```
-
-Table [BLUPM]. 
-*Empirical Bayes estimates and 95% credible intervals for random effects of area of psychology included in the current study at the medium effect size benchmark.*
-```{r bloop medium, out.width = "\\textwidth", fig.pos = "!h"}
-kable(round(ranef(mediumMod)$SubfieldClassification, 3))
-```
+```{r, dpi=300, fig.height= 15, fig.width= 13, out.width = "\\textwidth", fig.pos = "H", fig.cap="Forest plot of studies of the power of the power of psychology research literatures at Cohen’s (1988) large effect sizes. The polygon depicts reports the model intercept."}
+res <- brownSmall
+par(mar=c(4,4,1,2), font = 1)
+forest(res, xlim=c(-1.5, 1.35), at = c(0,.25, .5, .75, 1), 
+       transf = backtransform,
+       ilab = data.frame(dat$YearsStudied, dat$SubfieldClassification),
+       ilab.xpos=c(-.16, -.58), cex=1.1, ylim=c(-1, res$k+3),
+       xlab="Estimated power", mlab="", addfit = F, showweights = F)
 
 
-Table [BLUPL]. 
-*Empirical Bayes estimates and 95% credible intervals for random effects of area of psychology included in the current study at the large effect size benchmark.*
-```{r bloop large, out.width = "\\textwidth", fig.pos = "!h"}
- 
-kable(round(ranef(largeMod)$SubfieldClassification, 3))
+addpoly(x =  backtransform(res$b[1]), 
+        ci.lb = backtransform(res$ci.lb[1]),
+        ci.ub = backtransform(res$ci.ub[1]), cex = 1.1)
+
+# Bold font 
+par(font=2)
+### add column headings to the plot
+text(-1.3, res$k+2, c("Author(s) (year)"), cex = 1.25)
+text(-.58, res$k+2, c("Subfield"), cex = 1.25)
+text(-.18, res$k+2, c("Years sampled"), cex = 1.25)
+# normal font 
+par(font=1)
 ```
 
 
 \newpage
 
-```{r scatterplot small, dpi=300, out.width = "\\textwidth",fig.height= 4.5, fig.width= 6.5, fig.cap="Scatter plot of statistical power to detect a small effect over time. Dotted lines are 95% confidence intervals, and the solid line is the estimated proportion power of psychology by year, point sizes reflect the relative weighting of articles.", warning=FALSE}
-# PLOT medium  
-samplingVar <- dat$samplingVarSmall_Mean
+```{r, dpi=300, fig.height= 4.5, fig.width= 6.5, out.width = "\\textwidth", fig.pos = "H", fig.cap="Scatter plot of mean statistical power to detect a small effect over time. Dotted lines are 95\\% confidence intervals, and the solid line is the estimated proportion power of psychology by year, point sizes reflect the relative weighting of articles."}
+
+# small  
+samplingVar <- dat$brownMeanSE
 values <- dat$estSmallMean
-## Model with unstandardised years for plotting
-res <- rma.mv(yi = values, V = samplingVar, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = YearsStudiedMean,  data = dat, slab = StudyName)
+## Model with unstandardised years for plotting, the optimiser is set here because sometimes the default model estimator can fail 
+res <- 
+  rma.mv(
+    yi = brownMeanSmall,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ YearsStudiedMean,
+    slab = StudyName,
+    data = dat, control=list(optimizer="optim", optmethod="Nelder-Mead")
+  )
+ 
 ### calculate predicted 
-preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+preds <- predict(res, transf = backtransform, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
 
 ### calculate point sizes by rescaling the standard errors
 wi    <- 1/sqrt(samplingVar)
@@ -782,21 +688,34 @@ lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.u
 
 ```
 
-```{r scatterplot medium, dpi=300,fig.height= 4.5, fig.width= 6.5, fig.cap="Scatter plot of statistical power to detect a medium effect over time. Dotted lines are 95% confidence intervals, and the solid line is the estimated proportion power of psychology by year, point sizes reflect the relative weighting of articles.", out.width = "\\textwidth", warning=FALSE}
+
+
+```{r, dpi=300, fig.height= 4.5, fig.width= 6.5, warning=FALSE, out.width = "\\textwidth", fig.pos = "H", fig.cap="Scatter plot of mean statistical power to detect a medium effect over time. Dotted lines are 95\\% confidence intervals, and the solid line is the estimated proportion power of psychology by year, point sizes reflect the relative weighting of articles."}
+
 # PLOT medium  
-samplingVar <- dat$samplingVarMed_Mean
+samplingVar <- dat$brownMeanSE
 values <- dat$estMedMean
 ## Model with unstandardised years for plotting
-res <- rma.mv(yi = values, V = samplingVar, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = YearsStudiedMean,  data = dat, slab = StudyName)
-### calculate predicted scores 
-preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+res <- 
+  rma.mv(
+    yi = brownMeanMed,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ YearsStudiedMean,
+    slab = StudyName,
+    data = dat, control=list(optimizer="optim", optmethod="Nelder-Mead")
+  )
+### calculate predicted 
+preds <- predict(res, transf = backtransform, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+
 
 ### calculate point sizes by rescaling the standard errors
 wi    <- 1/sqrt(samplingVar)
 size  <- 0.5 + 3.0 * (wi - min(wi, na.rm = T))/(max(wi, na.rm = T) - min(wi, na.rm = T))
 
 ### plot the risk ratios against absolute latitude
-plot(dat$YearsStudiedMean[!is.na(samplingVar)], dat$estMedMean[!is.na(samplingVar)], pch=19, cex=size, 
+plot(dat$YearsStudiedMean[!is.na(samplingVar)], values[!is.na(samplingVar)], pch=19, cex=size, 
      xlab="Year", ylab="Power at Medium Benchmark", ylim = c(0,1),
      las=1, bty="l")
 
@@ -807,17 +726,28 @@ lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.u
 
 ```
 
+ 
 \newpage
 
-```{r scatterplot large, dpi=300,fig.height= 4.5, fig.width= 6.5, fig.cap="Scatter plot of statistical power to detect a large effect over time. Dotted lines are 95% confidence intervals, and the solid line is the estimated proportion power of psychology by year, point sizes reflect the relative weighting of articles.", out.width = "\\textwidth", warning=FALSE}
+```{r, dpi=300, fig.height= 4.5, fig.width= 6.5, warning=FALSE, out.width = "\\textwidth", fig.pos = "H", fig.cap="Scatter plot of mean statistical power to detect a large effect over time. Dotted lines are 95\\% confidence intervals, and the solid line is the estimated proportion power of psychology by year, point sizes reflect the relative weighting of articles."}
 
-# PLOT values   
-samplingVar <- dat$samplingVarLarge_Mean
+# PLOT large
+samplingVar <- dat$brownMeanSE
 values <- dat$estLargeMean
 ## Model with unstandardised years for plotting
-res <- rma.mv(yi = values, V = samplingVar, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = YearsStudiedMean,  data = dat, slab = StudyName)
-### predict 
-preds <- predict(res, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+res <- 
+  rma.mv(
+    yi = brownMeanLarge,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ YearsStudiedMean,
+    slab = StudyName,
+    data = dat
+  )
+### calculate predicted 
+preds <- predict(res, transf = backtransform, newmods =(min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))))
+
 
 ### calculate point sizes by rescaling the standard errors
 wi    <- 1/sqrt(samplingVar)
@@ -836,40 +766,180 @@ lines((min(dat$YearsStudiedMean):ceiling(max(dat$YearsStudiedMean))), preds$ci.u
 ```
 
 
+\newpage 
+
+\begin{noindent}
+Table 2. 
+\textit{Meta-regression of the power of psychology studies at a small effect size, including the year studied in each power survey as a moderator.}
+\end{noindent}
+```{r}
+kable(niceMLMESum(brownSmall), booktabs = T, digits = 3) %>% 
+  kable_styling() 
+```
+
+\begin{noindent}
+Table 3.
+\textit{Meta-regression of the power of psychology studies at a medium effect size, including the year studied in each power survey as a moderator.}
+\end{noindent}
+```{r}
+kable(niceMLMESum(brownMed), booktabs = T, digits = 3) %>% 
+  kable_styling() 
+```
+
+\newpage
+\begin{noindent}
+Table 4. 
+\textit{Meta-regression of the power of psychology studies at a large effect size, including the year studied in each power survey as a moderator.}
+\end{noindent}
+```{r}
+kable(niceMLMESum(brownLarge), booktabs = T, digits = 3) %>% 
+  kable_styling() 
+```
+
 
 ### Bias assessment
-Although the included articles do not use traditional significance testing to assess their primary outcome, it is still possible that smaller articles which find more “alarming” results are more likely to be published. In order to assess for signs of publication bias we performed an analogue to Egger’s Test (Egger, Smith, Schneider, & Minder, 1997) by including the number of articles which were surveyed in each study as a moderator. The number of included articles was used instead of sampling variances as the sampling variances are expected to be associated with outcome scores, again due to the fact that estimated mean power levels towards either bound (1 or .05) are expected to have reduced variances. This test showed that sample size was not a significant predictor of average estimated statistical power at any of the benchmarks with parameter estimates for the small, medium, and large effects of b =  0.000,  95% CI [-0.0001, 0.0001], p = .45, medium b = 0.000, 95% CI [-0.0001, 0.0001], p = .45, and large b = -0.000, 95% CI [-0.0001, 0.0000], p = .44, giving no obvious indication of publication bias in this sample. 
 
+```{r}
+
+brownEggerSmall <-
+  rma.mv(
+    yi = brownMeanMed,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + NumberOfArticles,
+    slab = StudyName,
+    data = dat
+  )
+
+brownEggerMed <-
+  rma.mv(
+    yi = brownMeanMed,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + NumberOfArticles,
+    slab = StudyName,
+    data = dat
+  )
+
+brownEggerLarge <-
+  rma.mv(
+    yi = brownMeanLarge,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)) + NumberOfArticles,
+    slab = StudyName,
+    data = dat
+  )
+
+# funnel(brownSmall)
+# funnel(brownMed)
+# funnel(brownLarge)
+
+# plot(dat$brownMeanMed, dat$brownMeanSE)
+# param <- "NumberOfArticles"
+printCoef <- function(mod, param = NA, digits = options("digits")) {
+  if(is.na(param)) {param <- names(coef(mod))[1]}
+  estimates <- coef(summary(mod))[names(coef(mod)) == param, c("estimate", "ci.lb", "ci.ub", "pval")]
+  estimates <- c(printnum(estimates[1:3], digits = as.numeric(digits)), printp(as.numeric(estimates[4])))
+  print(paste0(estimates[1], ", 95% CI [", estimates[2], ", ", estimates[3], "], *p* = ", estimates[4]))
+}
+
+# Double checking that this method induces an association between se and the mean outcome
+sim <- function(loops) {
+  outs <- list()
+  for(i in 1:loops) {
+    n <-  abs(round(rnorm(47, 50, 100))) + 1
+    theta <- rbinom(47, size = n, .5) / n
+    theta[theta == 1] <- .95
+    theta[theta == 0] <- .05
+    # plot(n, theta)
+    # plot(brown_case_3(theta , n, "mean"), brown_case_3(theta, n, "se"))
+    nPhiCor <- cor.test(n, theta)
+    SEPhiCor <-
+      cor.test(brown_case_3(theta , n, "mean"),
+               brown_case_3(theta, n, "se"))
+    outs[[i]] <- tibble(nPhiR = nPhiCor$estimate, nPhiP = nPhiCor$p.value, sePhiR = SEPhiCor$estimate, sePhiP =  SEPhiCor$p.value)
+  }
+  return(do.call(rbind, outs))
+}
+
+# cooks.distance(brownMed)
+```
+
+Although the included articles do not use traditional significance testing to assess their primary outcome, it is still possible that smaller articles which find more “alarming” results are more likely to be published. In order to assess for signs of publication bias we performed an analogue to Egger’s Test (Egger, Smith, Schneider, & Minder, 1997) in the multilevel context by including the number of articles surveyed in each study as a moderator. This analysis uses the number of articles included in each study as opposed to the standard error of the estimate as the standard error of the estimate is a function of the observed estimate. This test suggests that there was no association between sample size and statistical power at any of the benchmarks with coefficient estimates for sample size at the small, medium, and large effects of `r printnum(brownEggerSmall$b[3], digits = 4)` (95% CI [`r printnum(brownEggerSmall$ci.lb[3], digits = 4)`, `r printnum(brownEggerSmall$ci.ub[3], digits = 4)`]), `r printnum(brownEggerMed$b[3], digits = 4)` 95% CI [`r printnum(brownEggerMed$ci.lb[3], digits = 4)`, `r printnum(brownEggerMed$ci.ub[3], digits = 4)`], and `r printnum(brownEggerLarge$b[3], digits = 4)`, 95% CI [`r printnum(brownEggerLarge$ci.lb[3], digits = 4)`, `r printnum(brownEggerLarge$ci.ub[3], digits = 4)`], giving no obvious indication of publication bias in this sample. 
+
+
+```{r}
+### Sensitivity analysis
+
+### Using Brown's formula
+### Small
+brownSmallNE <-
+  rma.mv(
+    yi = brownMeanSmall,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),
+    slab = StudyName,
+    data = filter(dat, !is.na(dat$PowerAtSmallEffectMean)),
+    control=list(optimizer="optim", optmethod="Nelder-Mead"))
+
+brownoutSmallNE <- convertModelOutput(brownSmallNE)
+
+### Medium
+brownMedNE <-
+  rma.mv(
+    yi = brownMeanMed,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),
+    slab = StudyName,
+    data = filter(dat, !is.na(dat$PowerAtMediumEffectMean)),
+    control=list(optimizer="optim", optmethod="Nelder-Mead")
+  )
+brownoutMedNE <- convertModelOutput(brownMedNE)
+ # brownoutMed
+### Large
+brownLargeNE <-
+  rma.mv(
+    yi = brownMeanLarge,
+    V = brownMeanSE ^ 2,
+    random = ~ 1 |
+      SubfieldClassification / id / eid,
+    mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),
+    slab = StudyName,
+    data = filter(dat, !is.na(dat$PowerAtLargeEffectMean))
+  )
+
+brownoutLargeNE <- convertModelOutput(brownLargeNE)
+
+```
 
 # Discussion
-5.3 Discussion
-This analysis suggests that there has been little to no change in the statistical power of psychology research over the previous half century. The reporting of statistical power analysis appears to have increased slightly over time, but is still uncommon. These results are unexpected given the large number of papers that have been published arguing for power analysis to be performed as a part of research planning over the last 50 years (e.g., Bezeau & Graves, 2001; Cohen, 1962; Rossi, 1990; Sedlmeier & Gigerenzer, 1989), the increasing availability of user friendly power analysis tools (e.g., Cohen, 1988; Faul et al., 2007), as well as technological innovations (e.g., Amazon Turk studies) and larger undergraduate cohorts that could make larger sample research more tractable at least in many areas of psychological research. 
-Given that the average effect size seen in the psychology literature has been estimated to be around or even slightly below Cohen’s ‘medium’ effect size (e.g., Bosco, Aguinis, Singh, Field, & Pierce, 2015; Gignac & Szodorai, 2016; Quintana, 2017) and have remained quite stable or even decreased slightly over time [effect size chapter], this suggests that the average psychological study should fail to find significant results as much as 40% of occasions assuming that the effect under study is in fact present. Despite this, over 90% of psychology papers report statistically significant findings (Fanelli, 2010). This suggests that either a large proportion of performed research is going unreported, or that a large amount of research is presented as having found statistically significant findings achieved in some part through p-hacking, HARKing or through the exploitation of researcher degrees of freedom (M Bakker, van Assen, Crompvoets, Ong, & Soderberg, 2017; LeBel, McCarthy, Earp, Elson, & Vanpaemel, 2018; Wicherts et al., 2016).
-Given the evidence regarding how poor our intuitions about the likely power and precision of research (e.g., Marjan Bakker, Hartgerink, Wicherts, & van der Maas, 2016; Obrecht, Chapman, & Gelman, 2007; Tversky & Kahneman, 1971), formal sample size planning should play a major role in helping researchers plan their studies. Formal sample size planning (e.g., planning for adequate levels of power, narrow confidence or credible intervals, convincing evidence via Bayes factors, etc.) is an important tool for researchers who wish to ensure that they are not wasting their participant’s time, their own time and limited research funding on experiments which are unlikely to allow them to draw accurate inferences. A variety of research planning packages and programs are freely available and should enable researchers to plan for most statistical analyses (e.g., the R package "SIMSEM" for structural equation modeling; Beaujean, 2014; G*Power for the most common analyses such as ANOVA, regression or chi-square analysis; Faul et al., 2007; for advice on planning for sufficiently convincing Bayes factors see Schönbrodt & Wagenmakers, 2017; PINT 2.2 for two level hierarchical modeling; Snijders & Bosker, 1993; and "PANGEA" for more complex ANOVA designs; Westfall, 2015). More complex analyses may require consultation with a statistician (Van Meter & Charnigo, 2014). 
+This analysis suggests that there has been little to no change in the statistical power of psychology research over the previous half century. The reporting of statistical power analysis appears to have increased slightly over time, but is still uncommon. These results are unexpected given the large number of papers that have been published arguing for power analysis to be performed as a part of research planning over the last 50 years [e.g., @cohenStatisticalPowerAbnormalsocial1962; @bezeauStatisticalPowerEffect2001; @rossiStatisticalPowerPsychological1990a], the increasing availability of user friendly power analysis tools [e.g., @cohenPowerPrimer1992; @faulPowerFlexibleStatistical2007], as well as technological innovations (e.g., Amazon Turk studies) and larger undergraduate cohorts that could make larger sample research more tractable at least in many areas of psychological research.
 
-Editors and reviewers can play a role in supporting the routine performance and reporting of a priori power analysis by requiring a statement of justification for the included sample size following the formal reporting guidelines that have already been established (APA Publications Communications Board Working Group on Journal Article Reporting Standards, 2008; Moher et al., 2010; Moher et al., 2001; Wilkinson, 1999). Requiring the accurate justification of sample sizes as a routine part of research reporting (e.g., stating that the sample size was chosen due to practical constraints such as in the current study, identified through formal sample size planning such as AIPE or power analysis, or even stating that no sample size planning occurred when this is the case) could help establish a norm for these issues to be considered during research planning. 
+Given that the average effect size seen in the psychology literature has been estimated to be around or even slightly below Cohen’s ‘medium’ effect size [e.g., @boscoCorrelationalEffectSize2015a; @gignacEffectSizeGuidelines2016; @quintanaStatisticalConsiderationsReporting2017] and have remained quite stable or even decreased slightly over time [see Chapter 7], this suggests that the average psychological study should fail to find significant results as much as 40% of occasions assuming that the effect under study is in fact present. Despite this, over 90% of psychology papers report statistically significant findings [@fanelliPositiveResultsIncrease2010]. This suggests that either a large proportion of performed research is going unreported, or that a large amount of research is presented as having found statistically significant findings achieved in some part through p-hacking, HARKing or through the exploitation of researcher degrees of freedom [@bakkerRestrictionOpportunisticUse2017; @lebelUnifiedFrameworkQuantify2018; @sijtsmaImprovingConductReporting2016].
+
+Given the evidence regarding how poor our intuitions about the likely power and precision of research [@bakkerResearchersIntuitionsPower2016; @obrechtIntuitiveTestsLay2007a; @tverskyBeliefLawSmall1971], formal sample size planning should play a major role in helping researchers plan their studies. Formal sample size planning (e.g., planning for adequate levels of power, narrow confidence or credible intervals, convincing evidence via Bayes factors, etc.) is an important tool for researchers who wish to ensure that they are not wasting their participant’s time, their own time and limited research funding on experiments which are unlikely to allow them to draw accurate inferences. A variety of research planning packages and programs are freely available and should enable researchers to plan for most statistical analyses [e.g., the R package "SIMSEM" for structural equation modeling; @beaujeanSampleSizeDetermination2014; G*Power for the most common analyses such as ANOVA, regression or chi-square analysis; @faulPowerFlexibleStatistical2007a; PINT 2.2 for two level hierarchical modeling; @snijdersStandardErrorsSample1993; for advice on planning for sufficiently convincing Bayes factors see [@schonbrodtBayesFactorDesign2017]; and "PANGEA" for more complex ANOVA designs;  @westfallPANGEAPowerANalysis2015]. More complex analyses may require consultation with a statistician [@vanmeterStrengtheningInteractionsStatisticians2014].
+
+Editors and reviewers can play a role in supporting the routine performance and reporting of a priori power analysis by requiring a statement of justification for the included sample size following the formal reporting guidelines that have already been established [@apapublicationscommunicationsboardworkinggrouponjournalarticlereportingstandardsReportingStandardsResearch2008; @schulzCONSORT2010Statement2010; @wilkinsonStatisticalMethodsPsychology1999]. Requiring the accurate justification of sample sizes as a routine part of research reporting (e.g., stating that the sample size was chosen due to practical constraints such as in the current study, identified through formal sample size planning such as AIPE or power analysis, or even stating that no sample size planning occurred when this is the case) could help establish a norm for these issues to be considered during research planning. 
+
 This advice – that researchers should consider the statistical power of their analyses during research planning and that editors should request or even require the reporting of power analyses – is the suggested remedy in almost all of the statistical power reviews included in the current analysis. It has apparently failed to influence the practices of working scientists. It is hard to imagine that saying it again here will result in anything different. 
-The recent development and rapid uptake of new research, publication and reporting initiatives give some reason for optimism. Preregistration of confirmatory analysis plans can help allow researchers to avoid unwittingly altering their analysis plans and increasing the probability of obtaining a false positive finding (Simmons, Nelson, & Simonsohn, 2011). The use of preprint servers allows researchers to disseminate findings outside of the traditional publication system, subverting publication bias and allowing small scale studies or research to be available for future meta-analysts, helping to avoid effect size inflation. Largescale mutli-lab collaborative efforts like the Psychological Science Accelerator (Moshontz et al., 2018) and the Many Labs projects (Klein et al., 2018) facilitate extremely large scale research, allowing for extremely high powered research even when effect sizes may be small. However, these initiatives still make up an extremely small part of the scientific literature. For research consumers this means we must accept that the research literature likely provides exaggerated effect size estimates ([chapter pub bias] (Stanley, Carter, & Doucouliagos, 2018)) and has a higher false positive error rate than it otherwise would.
+
+The recent development and rapid uptake of new research, publication and reporting initiatives give some reason for optimism. Preregistration of confirmatory analysis plans can help allow researchers to avoid unwittingly altering their analysis plans and increasing the probability of obtaining a false positive finding [@simmonsFalsePositivePsychology2011]. The use of preprint servers allows researchers to disseminate findings outside of the traditional publication system, subverting publication bias and allowing small scale studies or research to be available for future meta-analysts, helping to avoid effect size inflation. Large-scale multi-lab collaborative efforts like the Psychological Science Accelerator [@moshontzPsychologicalScienceAccelerator2018] and the Many Labs projects [@kleinManyLabsInvestigating2018] facilitate extremely large scale research, allowing for extremely high powered research even when effect sizes may be small. However, these initiatives still make up an extremely small part of the scientific literature. For research consumers this means we must accept that the published research literature likely provides exaggerated effect size estimates on average and has a higher false positive error rate than it otherwise would [@stanleyWhatMetaAnalysesReveal2018].
 
 #### Limitations
 
-In interpreting these findings, it’s important to keep in mind that the individual articles in these power surveys are not a random sample from the psychological research literature, and it is difficult to predict whether the sampling choices will tend to underestimate or overestimate the average power of psychological research. It is possible that power surveys are more likely to be performed when a particular area of research is underpowered, which could lead to this analysis underestimating the average statistical power of psychology. This issue only holds for a subset of the included studies, with the other included studies either using convenience samples (e.g., Szucs & Ioannidis, 2017), samples chosen to be broadly representative of a subfield (e.g., Orme & Combs-Orme, 1986), or samples selected to represent high-impact journals in a subfield (e.g., Cashen & Geiger, 2004; Rossi, 1990, a strategy which could upwardly bias estiamtes). Secondly, the included power surveys assume that alpha is set at .05, meaning that these results may overestimate power as they ignore alpha corrections for multiple comparisons which lead to lower power. Power surveys also almost uniformly target tests for which power can be easily estimated or defined, ignoring more sophisticated analyses (e.g., SEM, factor analysis, or multilevel models). This means that this study may underestimate the average power of psychological research if larger studies tend to use these more sophisticated techniques. However, given that simple significance testing is rarely a primary concern for these statistical techniques their exclusion from this analysis may not be unreasonable.
+In interpreting these findings, it’s important to keep in mind that the individual articles in these power surveys are not a random sample from the psychological research literature, and it is difficult to predict whether the sampling choices will tend to underestimate or overestimate the average power of psychological research. It is possible that power surveys are more likely to be performed when a particular area of research is underpowered, which could lead to this analysis underestimating the average statistical power of psychology. This issue only holds for a subset of the included studies, with the other included studies either using convenience samples (e.g., Szucs & Ioannidis, 2017), samples chosen to be broadly representative of a subfield (e.g., Orme & Combs-Orme, 1986), or samples selected to represent high-impact journals in a subfield (e.g., Cashen & Geiger, 2004; Rossi, 1990, a strategy which could upwardly bias estimates). Secondly, the included power surveys assume that alpha is set at .05, meaning that these results may overestimate power as they ignore alpha corrections for multiple comparisons which lead to lower power. Power surveys also almost uniformly target tests for which power can be easily estimated or defined, ignoring more sophisticated analyses (e.g., SEM, factor analysis, or multilevel models). This means that this study may underestimate the average power of psychological research if larger studies tend to use these more sophisticated techniques. However, given that simple significance testing is rarely a primary concern for these statistical techniques their exclusion from this analysis may not be unreasonable.
 
 #### Conclusion
 
 Statistical power to detect small to medium effects appears to be substantially lower than recommended standards and power analysis is rarely reported in psychology research. Statistical power does not appear to have increased over the last 60 years, despite continued criticism of this fact, the advocacy for the use of formal sample size planning techniques the increasing ease of use of. Research consumers should be aware that the average power of psychological science is lower than would be ideal for ‘small’ or ‘medium’ effects, and only acceptably high for ‘large’ effects. Research consumers should make sure they read and interpret the published literature with these facts in mind, take steps to avoid performing underpowered research, and ensure that the results of their analyses are available to future meta-analysts regardless of the statistical significance of their results. 
-
-### Sensativity analysis - Brown
-
-Although this approach avoids the overweighting studies which had mean powers near either bound, it is a less efficient estimator and as such the main results presented below use inverse variance weighting [@marin-martinezWeightingInverseVariance2010]. 
-
-Secondly, we reran this analysis using a variance stabalising transformation following @brownCovarianceStructures1982, converting the mean into an unbounded quantity using
-
-$$\phi = -\log{\bigg( \frac{1}{\hat{\theta}} - 1\bigg)}$$
-
-and calculating the standard error as 
-$$ se = \sqrt{ \frac{ \hat{\theta}\times(1-\hat{\theta}) / n}  { \hat{\theta}\times(1-\hat{\theta})}} $$
-Here, $\hat\theta$ is the estimated mean power, and n is the number of studies examined in each power survey. These analyses made little to no difference in the model output, with the model estimates of the  intercept differing by less than `r max(modelComparison$differenceInter[1:2])` at the small or medium benchmarks, although increasing by a more noteworthy `r modelComparison$differenceInter[3]` at the large benchmark. The estimated change per year is also substantively identical at all three power benchmarks (although they are no longer linear with regard to untransformed power), and all parameters are similarly precisely estimated. 
 
 \newpage
 
@@ -892,5 +962,5 @@ r_refs(file = "r-references.bib")
 
 
 ```{r}
-render_appendix("Supplementary_materials.RMD")
+# render_appendix("Supplementary_materials.RMD")
 ```
