@@ -128,7 +128,6 @@ for(i in unique(dat$StudyName)) {
 }
 
 # calculating variance and IQR 
-dat$varMedium <- dat$SDPowerAtMedium^2  
 dat$IQRMedium <- dat$ThirdQuartilePowerAtMedium - dat$FirstQuartilePowerAtMedium
 # Number missing SDs
 sum(is.na(dat$SDPowerAtSmall) |is.na(dat$SDPowerAtMedium)| is.na(dat$SDPowerAtLarge) )

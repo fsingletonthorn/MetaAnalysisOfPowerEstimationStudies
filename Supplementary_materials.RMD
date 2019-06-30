@@ -1,0 +1,378 @@
+---
+output:
+  pdf_document:
+    latex_engine: xelatex
+
+always_allow_html: yes
+---
+
+# Supplementary Materials
+
+## Supplementary Materials 1: Power surveys included in the primary analysis
+
+\noindent Table SM1.\newline
+\noindent \textit{Power surveys included in the primary analysis.}
+
+```{r}
+library(tidyverse); library(knitr); library(kableExtra)
+primaryAnalysisDat <- dat
+articles <-
+        data.frame(
+                Article = apply(
+                        data.frame(primaryAnalysisDat$StudyName, ". " , primaryAnalysisDat$Title, ", ",  primaryAnalysisDat$Jounral),
+                        MARGIN = 1,
+                        paste,
+                        collapse = ""
+                ),
+               # DOI = dat$DOI,
+                "Subfield classification" = dat$SubfieldClassification,
+                `Number of articles`  = dat$NumberOfArticles
+)
+
+articles <- articles %>% 
+        group_by(Article) %>%
+        summarise(sum(Number.of.articles)) %>%
+        right_join(articles, by = "Article")
+
+articles <- filter(articles, !str_detect(Article, pattern = "NA, NA"))
+articles <- articles[, c("Article", "Subfield.classification", "sum(Number.of.articles)")]
+        
+kable(articles,
+        col.names = c("Articles",
+                      # "DOI",
+                      "Subfield",
+                      "Included articles"),
+        booktabs = T, longtable = T) %>%
+        kable_styling(font_size = 9)  %>%
+  column_spec(c(1,2), width = c("8.5cm", "3.5cm", "1.5cm"))
+#         kable_styling(latex_options = "scale_down")
+```
+
+
+## Supplementary Materials 2: Search parameters
+
+
+\noindent Table SM2.\newline
+\noindent \textit{Databases and search terms used for data collection for a systematic review of power surveys performed on psychological research. Search performed on the 11th September 2017.}
+
+```{r}
+
+output <- data.frame(database = c("Psychinfo, Ovid Interface", "Web of Science Core Collection", "Total number of records", "De-duplicated library"))
+output$search <- c('"*power*" or "Determination" or "estimat*" or "sampl*").m_titl. and ("power analysis" or "Statistical Power" or "Sample Size Estimation" or "Sample Size Determination" or "Sample size selection").mp.',
+'SU = (Psychology OR Psychiatry OR "Mathematical Methods In Social Sciences") AND TI = (Power* OR Sampl*) AND TS = ("power analysis" or "Statistical Power" or "Sample Size")',"", "")
+output$numbers <-c(916,
+1072,
+1988,
+1489)
+
+
+kable(output, col.names = c("Database", "Search terms", "Number of records"), booktabs = T)  %>%
+          kable_styling( latex_options = "scale_down") %>% #    %>%
+  column_spec(c(1,2), width = c("3.5cm", "10cm", "2cm"))
+```
+
+
+\newpage
+
+## Supplementary Materials 3: Code book for data collection
+
+
+\noindent Coding rules:
+
+* If a paper reports median power estimates separated by year, enter each year's values into the database separately by year 
+
+* For studies which report median power estimates broken down into other categories (e.g., by journal), take the highest level (e.g., the values for the entire sample) at which median power levels are reported. If medians are not reported, record data at the highest level (e.g., "by APA published journals" as opposed to "by journal") 
+
+* If a paper calculates observed power (i.e., power to detect the observed effect size of each study), exclude - When studies include multiple investigations of the same articles (e.g., studies examining the power of mixed effects study designs to investigate power for main and interaction effects) report the higher estimate. 
+
+* If a paper calculates power for meta-analytically derived average, exclude, but retain data - If a paper calculates power for other values, note and include (but exclude from meta-analysis) 
+
+* If power values are stated using multiple effect sizes, record the stated Cohen's d, but preferably note the source for the estimates (e.g., "Cohen, 1988") 
+
+* Note if an article explicitly notes having used any effect size apart from hedges g (i.e., the effect size that is often called Cohen's d in papers, but which actually uses Hedges' estimator)
+
+\newpage
+\noindent Table SM3.\newline
+\noindent \textit{Power surveys included in the primary analysis.}
+```{r}
+ codeBook <- read_excel(path = "PowerEstimationReviewDataCollection2018.03.25.xlsx", sheet = 'CodeBook"Data_power_estimates"')
+
+kable(codeBook, longtable = T ,booktabs = T, col.names = c("Column name", "Explanation") ) %>%
+          kable_styling(font_size = 9) %>% # latex_options = "scale_down")  %>%
+  column_spec(c(1,2), width = c("6cm", "9cm"))
+
+```
+
+
+\newpage
+
+## Supplementary Materials 4: Sensitivity analyses and robustness checks
+
+We performed a set of robustness and sensitivity anlayses. First, we ran leave one out cross validation to assess whether any individual power estiamte was overly influential. Secondly, we excluded all studies for which we had to estimate mean power using Wan and colleagues 2014 estimator. Thirdly, we performed all analyses treating each mean power estimate as a simple mean, not transorming it. Finally, we tried alternative model specifications, removing random effects. None of these robustness or sensativity analyses led to substantial differences in the results. See Tables SM4 to SM6 for model output from all of the sensativity analyses, and below for details on each of these analyses. 
+
+### Leave one out cross validation
+
+Leave one out cross validation was used to assess whether any individual power estimate has a large impact on the model coefficient values. The estimated mean level of power did not change by more than a power of `r printnum(max(LOOMaxIntDiffs), digits = 3)` and the coefficient for year did not change by more than `r printnum(max(LOOMaxbDiffs), digits = 3)` at any of the effect size benchmarks when any individual estimate was droped from these analyses.
+
+```{r, , message=FALSE, warning=FALSE, echo = FALSE}
+# MEDIUM EFFECT SIZE BENCHMARK
+######## model accounting for area of research # Models with means 
+mediumMod <- rma.mv(yi = estMedMean, V = samplingVarMed, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)), slab=StudyName,  data = dat)
+
+# ICCs
+mediumModICCSubfield <- round(mediumMod$sigma2[1] / sum(mediumMod$sigma2), 3)
+mediumModICCArticle <-  round(mediumMod$sigma2[2] / sum(mediumMod$sigma2), 3)
+mediumModICCEstimate <- round(mediumMod$sigma2[3] / sum(mediumMod$sigma2), 3)
+
+#### SMALL EFFECT SIZE BENCHMARK
+smallMod <- rma.mv(yi = estSmallMean, V = samplingVarSmall, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+# ICCs
+smallModICCSubfield <- round(smallMod$sigma2[1] / sum(smallMod$sigma2), 3)
+smallModICCArticle <- round(smallMod$sigma2[2] / sum(smallMod$sigma2), 3)
+smallModICCEstimate <- round(smallMod$sigma2[3] / sum(smallMod$sigma2), 3)
+
+#### LARGE EFFECT SIZE BENCHMARK
+# Models with mean imputation
+largeMod <- rma.mv(yi = estLargeMean, V = samplingVarLarge, random = ~ 1 | SubfieldClassification / id / I(1:53), mods = ~ as.numeric(YearsStudiedMean - mean(YearsStudiedMean)),  data = dat, slab=StudyName)
+# ICCs
+largeModICCSubfield <- round(largeMod$sigma2[1] / sum(largeMod$sigma2), 3)
+largeModICCArticle <- round(largeMod$sigma2[2] / sum(largeMod$sigma2), 3)
+largeModICCEstimate <- round(largeMod$sigma2[3] / sum(largeMod$sigma2), 3)
+
+```
+
+### Excluding studies for which power had to be estimated
+
+We re-performed each analyses excluding the 5 studies for which means had to be estimated from medians and quartiles using Wan et al. (2014)'s method. The results were not meaningfully different, with similar precision in the coefficient estimates, the estimates of the mean statistical power at each benchmark changing by less than `r printnum(max(modelComp$intDiffs)+.0004,digits = 3)` and the coefficents for year changing by `r printnum(max(modelComp$bDiffs),digits = 3)` or less.
+
+### Using simple means
+
+We also performed these analyses treating the power estimates as simple means, not transforming the power estimates, and calculating their variances as their sample standard deviations divided by the square root of the sample size. This analysis involved estimating the variances of a number of mean power estimates as standard deviations were not reported for `r length( dat$id[((is.na(dat$SDPowerAtLarge) & !is.na(dat$estLargeMean)) | (is.na(dat$SDPowerAtMedium) & !is.na(dat$estMedMean))  | (is.na(dat$SDPowerAtSmall)   & !is.na(dat$estSmallMean)))])` power estimates from `r length(unique( dat$id[((is.na(dat$SDPowerAtLarge) & !is.na(dat$estLargeMean)) | (is.na(dat$SDPowerAtMedium) & !is.na(dat$estMedMean))  | (is.na(dat$SDPowerAtSmall)   & !is.na(dat$estSmallMean)))]))` articles. 
+
+Several methods were used to estimate these missing variances. For `r freqTabSDSmall` values at the small benchmark and for `r freqTabSDMed # freqTabSDLarge` at the medium and large benchmarks we estimated varainces from frequency tables (i.e., tables showing how many articles had an estiamted power at a given benchmark between .05 and .1, between .1 and .2, etc), using  
+
+$$\sigma^2 = \frac{\Sigma(fx^2)}{n} \bar{x}^2$$
+
+f being the frequency of occurrences within each bin, x being the mid interval value (e.g., for the bin .1 - .19, the mid interval value would be .145), n being the total number of values included and $\bar{x}$ being the estimated mean value calculated as the weighted average of the mid-interval values.
+
+$$\bar{x} = \frac{\Sigma(f\hat{x})}{\Sigma (f)}$$
+
+We estimated variances using Wan et al. (2014)'s C3 method (their equation 16) for `r nSmallVarC3` mean power estimates at the small benchmark, `r nMedVarC3` articles at the medium benchmark,  and `r nLargeVarC3` at the large benchmark. For one of these articles the range and interquartile ranges of power at the small and medium benchmarks were extracted from plots (Smith, Hardy, & Gammell, 2011) using R's ‘locator' function. In order to validate the accuracy of this extraction method, median power levels for the medium and small effect size benchmarks for each year were also extracted and compared to the estimates provided in the paper's text; all six extracted values were within 0.005 of the values reported the text. This left a single article at the small effect size benchmark for which we could not estimate the variance of its power estimates (it did not report a power frequency table or quartiles), which was left out of this analysis.
+
+No substantial differences in interpretation would result from the choice to treat the estimates as simple means, with the estimated mean power of psychology changing by `r printnum(abs(modelCompSimpleMeans$intDiffs[2]))` or less at the small and medium benchmarks, although estimated power is estimated to be notably lower at the large effect size benchmark with its estimate decraseing by `r printnum(abs(modelCompSimpleMeans$intDiffs[3]))`, and the estimated change in statistical power by year being negligable and similarly precisely estimated. 
+
+### Alternative model parameterisations 
+
+Finally, all models were re-run without random effects for estimate, study, or field of research. None of these changes altered the effect of year by more than .002, altered the intercept parameter by more than .04, changed any parameters statistical significance at the .05 level, or provided results which would lead to substantially different conclusions being drawn. 
+
+\newpage
+\begin{noindent}
+Table SM6. \newline
+\textit{Mean estimated power to detect a small effect and estimated change per year (in both transformed units and back-transformed to units of statistical power) for the primary analysis model presented in the article body ("Main model"), a model without a coefficient for year, without random effects for field or subfield, without random effects for article, and a model estimated using untransformed power estimtes (i.e., treating effects as simple means).
+}
+\end{noindent}
+
+```{r}
+kable(sensitivitySmall, booktabs = T, digits = 3,
+      col.names = c("Model", "Estimate", "95% CI LB",  "95% CI UB", "Estimate", "95% CI LB",  "95% CI UB", "Estimate", "95% CI LB",  "95% CI UB")) %>% 
+  kable_styling()  %>%
+          kable_styling(latex_options = "scale_down") %>%
+  add_header_above(c(" " = 1, "Mean power" = 3, "Transformed change per year" = 3, "Change per year in power" = 3))
+
+```
+\noindent \textit{Note}. Estimates of the change per year in back-transformed units are calculated from the model intercept, and represent the estimated change per year at the mean year included in this study, 1985. 
+
+
+\newpage
+\begin{noindent}
+Table SM6. \newline
+\textit{Mean estimated power to detect a medium effect and estimated change per year (in both transformed units and back-transformed to units of statistical power) for the primary analysis model presented in the article body ("Main model"), a model without a coefficient for year, without random effects for field or subfield, without random effects for article, and a model estimated using untransformed power estimtes (i.e., treating effects as simple means).
+}
+\end{noindent}
+```{r}
+kable(sensitivityMed, booktabs = T, digits = 3,
+      col.names = c("Model", "Estimate", "95% CI LB",  "95% CI UB", "Estimate", "95% CI LB",  "95% CI UB", "Estimate", "95% CI LB",  "95% CI UB")) %>% 
+  kable_styling()  %>%
+          kable_styling(latex_options = "scale_down") %>%
+  add_header_above(c(" " = 1, "Mean power" = 3, "Transformed change per year" = 3, "Change per year in power" = 3))
+```
+\noindent \textit{Note}. Estimates of the change per year in back-transformed units are calculated from the model intercept, and represent the estimated change per year at the mean year included in this study, 1985.
+
+
+\newpage
+\begin{noindent}
+Table SM7. \newline
+\textit{Mean estimated power to detect a large effect and estimated change per year (in both transformed units and back-transformed to units of statistical power) for the primary analysis model presented in the article body ("Main model"), a model without a coefficient for year, without random effects for field or subfield, without random effects for article, and a model estimated using untransformed power estimtes (i.e., treating effects as simple means).
+}
+\end{noindent}
+```{r}
+kable(sensitivityLarge, booktabs = T, digits = 3,
+      col.names = c("Model", "Estimate", "95% CI LB",  "95% CI UB", "Estimate", "95% CI LB",  "95% CI UB", "Estimate", "95% CI LB",  "95% CI UB")) %>% 
+  kable_styling()  %>%
+          kable_styling(latex_options = "scale_down") %>%
+  add_header_above(c(" " = 1, "Mean power" = 3, "Transformed change per year" = 3, "Change per year in power" = 3))
+```
+\noindent \textit{Note}. Estimates of the change per year in back-transformed units are calculated from the model intercept, and represent the estimated change per year at the mean year included in this study, 1985.
+
+\newpage
+
+## Supplementary Materials 5: Estimating the proportion of articles which report a power analysis in the psychology literature
+
+The results of the primary analysis suggest that the average power of published psychology literature has been low for small or medium effects and only acceptable for large effects, and that these values have been remarkably stable over time. Given that many of the included power surveys suggest that the routine performance and reporting of power analysis is a key mechanism by which the average statistical power of psychology reserach could be improved, a important question is whether power analysis has become more common over time. A number of the power surveys included in the primary analysis also reported the proportion of articles they examined that reported a power analysis. This means that we can begin to examine this body of literature to see whether there has been any obvious increase in the number of articles which report a power analysis. In order to begin to address this question, we performed a meta-regression of the  proportion of studies that report a power analysis, aggregating the results of all of the articles which reported how often power analyses were reported in their samples captured in the current literature search.
+
+### Secondary Analysis Methods
+
+Data extraction for the second analysis used the same randomization procedure as was used in the primary data extraction. During  eligibility screening for the primary data extraction, we also examined whether articles reported the proportion of their surveyed articles that reported a power analysis. We additionally searched the reference lists of each applicable article for additional applicable articles. A total of 17 surveys were found, 15 of which were identified during eligibility screening for the primary analysis, and two that were identified through reference list searches of applicable artilces. We extracted the years surveyed in each survey, the area of research examined (classified as in the primary analysis), the total number of articles examined in each survey, and the proportion of sampled articles which reported a power analysis. Data are avaliable from https://osf.io/h8u9w/.
+
+#### Sample characteristics
+
+The 17 included articles reported the proportion of studies that reported a power analysis from a total of 21 disinct samples. See Table SM8 for the number of articles  included in each sample, the population sampled from, and the years surveyed in each sample.
+Eight out of the included estimates examined research from clinical studies (e.g., clinical randomized controlled trials of psychological therapies), four examined educational research, three examined management / IO psychology, three neurocognitive/neuroimaging research, two examined general psychology and one examined communication research.
+
+
+```{r secondary data importing and cleaning}
+
+# Secondary analysis of the proportion of studies reporting a PA, meta-anaylsis without mods, and meta-analysis with year as a moderator
+## Code adapted from http://www.metafor-project.org/doku.php/faq#how_is_the_freeman-tukey_trans ~ Example from this used as a rough model (i.e., not FE, but REML estimation used, but otherwise quite similar), code for last diagram adapted from "http://www.metafor-project.org/doku.php/analyses:viechtbauer2007b"
+library(metafor)
+library(readxl)
+
+# Importing data - you will need to replace this file path with the file path to the file from https://osf.io/gpvbq/
+dataSetOri <- read_excel("SecondaryAnalysisData2018.03.25.xlsx", 
+                         sheet = "Data_prop_reporting_PA")
+dataSet <-as.data.frame(dataSetOri)
+
+############# Data cleaning ############ 
+
+### replace year data with median year ###
+#extract years vector for easy use
+years<-dataSet$YearsStudied
+# Extract just those studies that cover 1 year (produces warning, as studies which cover ranges are changed to NAs)
+medianYear<-as.numeric(years) # as.numeric(years)[is.na(as.numeric(years))]
+
+# index through from 1 to years
+for(i in 1:length(years)) {
+  # if the years is not a numeric (i.e., if "as.numeric(years)[i]" is na, AND unlisting a split string of years[i] does produce a values (i.e., (as.numeric(unlist(strsplit(years[i], "-"))[2])) is NOT NA, meaning there is a second value when you split the cell apart at "-")
+  if ((is.na(as.numeric(years)[i])) && (!is.na(as.numeric(unlist(strsplit(years[i], "-"))[2])))) {
+    # then set minYear to be the first value of "strsplit(years[i], "-"))" - i.e., the first year listed
+    minYear <- unlist(strsplit(years[i], "-"))[1]
+    # and set maxYear to be the second value of "strsplit(years[i], "-"))" - i.e., the second year listed
+    maxYear <- unlist(strsplit(years[i], "-"))[2]
+    # and then take the range of minYear to MaxYear
+    yearRange <- (minYear:maxYear)
+    # and then take the median of yearRange, the median year covered by the range of values
+    medianYear[i] <- median(yearRange)
+  }
+}
+
+# adding medianYear col to dataSet
+dataSet$medianYear<-medianYear
+
+#### Excluding data with text in the exclude box and removing McKeown et al., (2015), Gaskin & Happell (2013), and Gaskin & Happell (2013) which are, respectivly, a medical study, and two nursing studies #### 
+dataSet$excludeAndJustification[c(6,7,3,11,20)] <- "Exclude"
+datSA <- subset(dataSet, is.na(dataSet$exclude))
+
+### Ordering by median year ###
+datSA <- datSA[order(datSA$medianYear),]
+
+datSA$SubfieldClassification <- recode(datSA$SubfieldClassification, Neurocog = "Neuropsychology", "Management research" = "Management/IO")
+
+```
+
+\noindent Table SM8.\newline
+\noindent \textit{Original articles included in the secondary analysis.}
+```{r}
+datSA$PercentRepPA <- round(datSA$ProportionReportingPA * 100)
+datSA$PercentRepPA <- str_c(datSA$PercentRepPA, "%")
+
+kable( select(datSA, PaperCitation, YearsStudied, SubfieldClassification, NumberOfArticlesExamined, PercentRepPA), col.names = c("Paper", "Years Studied", "Subfield", "n", "% Reporting a PA"), row.names = FALSE, booktabs = T, longtable = T) %>%
+        kable_styling()  %>%
+  column_spec(c(1,2), width = c("5cm", "2cm", "2cm","2cm", "2cm"))
+        
+```
+
+
+### Analysis
+
+A mixed effects meta-regression was conducted to examine the proportion of studies which report a power analysis and to estimate the change in power analysis reporting rates over time.
+
+$$prop_j=\gamma_0+\gamma_1year_j+u_{area}+u_{survey}+u_{id}+e_j$$
+
+Proportions ($prop_j$ in the equation above) were transformed using the Tukey-Freeman Arcsine Transformation, as this can act to normalize the sampling distributions of proportions (Miller, 1978). This analysis included a parameter for year ($year_j$), which was mean-centered. This means the intercept is interpretable as the estimated Tukey-Freeman Arcsine transfored proportion of studies for which power analyses are performed in the mean year included in this survey (1993). Random effects were included for individual estimates ($u_{id}$), the survey that each estimate was collected as a part of ($u_{survey}$), and area of research ($u_{subfield}$, e.g., clinical psychology). This analysis therefore accounts for non-independence between estimates from the same subfield of research, and from the same survey (i.e., when a survey reported estimates from multiple year ranges), and the random effect for each estimate makes this a random effects meta-analysis (i.e., relaxing the assumption that each proportion is an estimate of the same population parameter). If a survey examined articles from a a range of years, the mean year covered in the anlysis was entered as the predictor (e.g., if a study examined 1980-1982, 1981 was entered as its value for year). Surveys which reported estimates for multiple year ranges (e.g., 1980-1982 and 1990-1992) were entered separately (i.e., a case was included for the 1980-1982 and for the 1990-1992 range). Restricted maximum likelihood estimation was used.
+
+```{r}
+################### meta analysis ##################
+# Transfrom proportion of successes to number of successes and save as xi (rounding to estimate number of articles, most proportions are correct the ~ 6 decimal or so, so the value will be exact, only McKeown, Andrew, Jennifer S. Gewandter, Michael P. McDermott, Joseph R. Pawlowski, Joseph J. Poli, Daniel Rothstein, John T. Farrar, et al. "Reporting of Sample Size Calculations in Analgesic Clinical Trials: Acttion Systematic Review." The Journal of Pain 16, no. 3 2015 could be a problem, and that's only by 1 success in either direction)
+datSA$xi <- round(datSA$ProportionReportingPA * datSA$NumberOfArticlesExamined)
+
+## DOUBLE ARCSINE TRANSFORM of number of articles, which should make the sampling distribution more normal - xi = number of "sucesses", ni = number sampled total (dat$NumberOfArticlesExamined)
+# See Miller, J. J. (1978). The Inverse of the Freeman - Tukey Double Arcsine Transformation. The American Statistician, 32(4), 138-138. doi:10.1080/00031305.1978.10479283 for details about the transformation, the formula used is the same, except that there is a multiplicative constant of .5 (accounted for in the transformation and back-transformation)
+# The TF double arcsine transformation is used to normalie and variance-stabilise the sampling distribution of proportions
+datSA <- escalc(measure="PFT",xi=xi, ni=NumberOfArticlesExamined, data=datSA, add=0 )
+
+#### Random effects meta analysis including median year as a moderator, final model #####
+res1 <- rma.mv(yi, vi, method="REML", random = list(~ 1 |  SubfieldClassification / PaperCitation  / I(1:nrow(datSA))), data=datSA, mods = medianYear-mean(medianYear))
+pred0 <- predict(res1, 0, transf=transf.ipft.hm, targs=list(ni=datSA$NumberOfArticlesExamined))
+
+# back transform, yi = doub arcsin transformed value 
+dat.back <- summary(datSA, transf=transf.ipft, ni=datSA$NumberOfArticlesExamined)
+
+```
+
+#### Results 
+The estimated percentage of papers reporting a power analysis is `r round(pred0$pred*100,1)`%, 95% CI [`r round(pred0$ci.lb[1]*100,1)`%,  `r round(pred0$ci.ub[1]*100, 1)`%]. There is a very small estimated yearly increase in estimated power analysis reporting rates over time of `r printnum( res1$b[2], digits = 3)` 95% CI [`r printnum(res1$ci.lb[2], digits = 3)`, `r printnum(res1$ci.ub[2], digits = 3)`] per year in Freeman-Tukey double arcsine transformed units. See Figure A1 for a forest plot of this analysis and Figure A2 for a meta-regression scatterplot of the datapoints over time.
+
+There are two main reasons to question the generalizability of the secondary analysis to psychology research more broadly. Firstly, many of the included literature surveys in this secondary analysis are from clinical psychology research. Secondly, there are few recent studies, and those that were published in the last 10 years only examine clinical and neuropsychology research. However, the results are so low that even if this analysis underestimated the proportion of articles reporting a power analysis by an order of magnitude, power analyses would still be quite rare. See below for sensitivity analyses of these results, and for a model which does not include random effects for study or area of research (as the preregistration did not specify that these effects would be included). 
+
+\newpage
+\begin{noindent}
+Table SM9. 
+\textit{Results of a meta-regression of the power of psychology studies at a large effect size, including the year studied in each power survey as a moderator.}
+\end{noindent}
+
+```{r}
+kable(niceMLMESum(res1), booktabs = T, digits = 3) %>% 
+  kable_styling()  %>%
+          kable_styling(latex_options = "scale_down")
+```
+
+
+
+
+```{r, dpi=300, fig.height= 15, fig.width= 13, out.width = "\\textwidth", fig.pos = "H", fig.cap="Forest plot of the proportion of articles reporting a power analysis. The polygon shows the model intercept."}
+#### plots #### 
+forest(dat.back$yi, ci.lb=dat.back$ci.lb, ci.ub=dat.back$ci.ub, psize=1,
+       ilab = data.frame(dat.back$YearsStudied,  dat.back$SubfieldClassification), ilab.xpos = c(-.2, -.65),
+       xlim=c(-1.82,1.45), alim=c(0,1), ylim=c(-1.1,23.7), refline=NA, digits=3L, xlab="Proportion of studies reporting a power analysis", slab = dat.back$PaperCitation, cex = 1.4)
+addpoly(pred0$pred, ci.lb=pred0$ci.lb[1], ci.ub=pred0$ci.ub[1], row=-0.5, digits=3, mlab="", cex = 1.4)
+abline(h=0.4)
+
+text(-1.82, 23, "Study",               pos=4, cex = 1.6)
+text(-.45, 23, "Years sampled",               pos=4, cex = 1.6)
+text(-.8, 23, "Subfield", pos=4, cex = 1.6)
+text( 1.45, 23, "Proportion [95% CI]", pos=2, cex = 1.6)
+```
+
+
+
+```{r, dpi=300, fig.height= 4.5, fig.width= 6.5, out.width = "\\textwidth", fig.pos = "H", fig.cap="Scatter plot of the estimated proportion of psychology articles reporting a power analysis. Dotted lines are 95\\% confidence intervals, and the solid line is the estimated proportion power of psychology by year, point sizes reflect the relative weighting of articles."}
+
+pred1 <- predict(res1, transf=transf.ipft.hm, targs=list(ni=datSA$NumberOfArticlesExamined))
+
+#png(filename = "Plots/SecondaryAnalysisScatter.png",width = 950, height = 500, units = "p")
+# Ploting proportion by year
+# a scatterplot of the data, a line (or rather: curve after the back-transformation) with the estimated average proportion of studies reporting a power analysis by years
+# weighting size of dots by standard error
+cexs <- 1/datSA$vi
+cexs <- 1 + (cexs - min(cexs)) / (max(cexs) - min(cexs))
+#plotting predicted proportion on year, with points size weighted by standard error
+plot(NA, NA, xlab="Year", ylab="Proportion of studies reporting a power analysis", xlim=c(min(datSA$medianYear),max(datSA$medianYear)), ylim=c(0,1), bty="l", cex.lab = 1)
+lines(datSA$medianYear, pred1$ci.lb, col="darkgray",  lty = "dashed",  lwd=2)
+# Upper and lower CIs
+lines(datSA$medianYear, pred1$ci.ub, col="darkgray", lty = "dashed", lwd=2)
+lines(datSA$medianYear, pred1$pred, col="darkgray", lwd=2)
+points(datSA$medianYear, transf.ipft(datSA$yi,datSA$NumberOfArticlesExamined), pch=19, cex=cexs)
+
+```
+
+
