@@ -3,7 +3,7 @@
 library(metafor); library(readxl)
 
 # Importing data - you will need to replace this file path with the file path to the file from https://osf.io/gpvbq/
-dataSetOri <- read_excel("PhD/Systematic Reviews/History of Power Estimation Studies/SecondaryAnalysisData2018.03.25.xlsx", 
+dataSetOri <- read_excel("SecondaryAnalysisData2018.03.25.xlsx", 
                          sheet = "Data_prop_reporting_PA")
 dataSetOri <-as.data.frame(dataSetOri)
 
@@ -84,3 +84,4 @@ lines(dat$medianYear, pred1$ci.lb, col="darkgray",  lty = "dashed",  lwd=2)
 lines(dat$medianYear, pred1$ci.ub, col="darkgray", lty = "dashed", lwd=2)
 lines(dat$medianYear, pred1$pred, col="darkgray", lwd=2)
 points(dat$medianYear, transf.ipft(dat$yi,dat$NumberOfArticlesExamined), pch=19, cex=cexs)
+

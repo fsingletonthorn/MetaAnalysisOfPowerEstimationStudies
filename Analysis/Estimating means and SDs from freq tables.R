@@ -6,37 +6,35 @@ length(unique(subset(data$id, is.na(data$exclude) == TRUE)))
 # number of datapoints = 64
 sum(is.na(data$exclude))
 # removing all the exlusions
-dat <- subset(data, is.na(data$exclude))
+data.set <- subset(data, is.na(data$exclude))
 
 # checked articles extracted with dat$id[which(is.na(dat$varMedium) & is.na(dat$IQRMedium))]
 # these were all checked for frequency tables
 articlesChecked <- c(96, 99, 73, 92, 59, 62, 42, 89, 112, 113, 121, 115, 123, 119, 122, 124, 131)
 
-## All of the following means and SDs were caluclated using the follwoing after loading in the 
+## All of the following means and SDs were caluclated using the following after loading in the 
 # lb (lower bound from the frequency table), ub (upper bounds), ns between lb and ub, and powers -
 # The results were then written into the excel file directly ~  in the SDSmallAlgEstFromCDT, SDMediumAlgEstFromCDT, & SDLargeAlgEstFromCDT cols
-nsS<- small # etc. 
-nS <-sum(ns)
-estMeanS <- sum(powers * ns) / n
-estVarS <-  (sum(ns * powers^2)/n) - estMean^2
-estSDS <- sqrt(estVar)
-estSDS
-
-nsM<- medium # etc. 
-nM <-sum(ns)
-estMeanM <- sum(powers * ns) / n
-estVarM <-  (sum(ns * powers^2)/n) - estMean^2
-estSDM <- sqrt(estVar)
-estSDM
-
-nsL<- large # etc. 
-nL <-sum(ns)
-estMeanL <- sum(powers * ns) / n
-estVarL <-  (sum(ns * powers^2)/n) - estMean^2
-estSDL <- sqrt(estVar)
-
-
-
+#  nsS<- small # etc. 
+#  nS <-sum(ns)
+#  estMeanS <- sum(powers * ns) / n
+#  estVarS <-  (sum(ns * powers^2)/n) - estMean^2
+#  estSDS <- sqrt(estVar)
+#  estSDS
+#  
+#  nsM<- medium # etc. 
+#  nM <-sum(ns)
+#  estMeanM <- sum(powers * ns) / n
+#  estVarM <-  (sum(ns * powers^2)/n) - estMean^2
+#  estSDM <- sqrt(estVar)
+#  estSDM
+#  
+#  nsL<- large # etc. 
+#  nL <-sum(ns)
+#  estMeanL <- sum(powers * ns) / n
+#  estVarL <-  (sum(ns * powers^2)/n) - estMean^2
+#  estSDL <- sqrt(estVar)
+#  
 # cASHEN, gEIGER 2004 # only small avaliable 
 lb <- c(.99, .95, .9, .85, .8, .7, .6, .5, .4, .3, .2, .1, .05)
 ub <-  c(1, .98, .94, .89, .84, .79, .69, .59, .49, .39, .29, .19, .09)
@@ -59,8 +57,8 @@ small <- c(0, 0, 2, 1, 1, 1, 0, 2, 2, 5, 16, 14)
 medium <- c(6, 2, 2, 3, 4, 4, 6, 4, 7, 3, 3, 0)
 large <- c(12, 6, 5, 6, 7, 3, 2, 1, 0, 1, 1, 0) 
 # mean diffs:
-pos <- 51
-reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
+pos <- str_which(data.set$Author, "Mazen, A. M. M., Hemmasi, M. and Lewis, M. F")
+reportedMeans <- c(data.set$PowerAtSmallEffectMean[pos], data.set$PowerAtMediumEffectMean[pos], data.set$PowerAtLargeEffectMean[pos]) 
 estimatedMeans <- c(0.2328015, 0.6015909, 0.8289773)
 meanDiffs[2,] <- reportedMeans - estimatedMeans
 
@@ -71,11 +69,10 @@ powers <-  rowMeans(data.frame(lb, ub))
 small <- c(9, 3, 1, 5, 1, 6, 7, 9, 15, 43, 75, 36)
 medium <- c(49, 15, 21, 24, 20, 19, 21, 18, 8, 11, 3, 1)
 large <- c(124, 22, 17, 21, 8, 10, 4, 1, 2, 0, 1, 0)
-pos <- 32
-reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
+pos <- str_which(data.set$Author, "Mone, M. A., Mueller, G. C. and Mauland, W.")
+reportedMeans <- c(data.set$PowerAtSmallEffectMean[pos], data.set$PowerAtMediumEffectMean[pos], data.set$PowerAtLargeEffectMean[pos]) 
 estimatedMeans <- c(0.2787381, 0.74, 0.9231667)
 meanDiffs[3,] <- reportedMeans - estimatedMeans
-
 
 # Haase 1974 # table 1
 lb <- c(.99, .95, .9, .80, .7, .6, .5, .4, .3, .2, .1, .05)
@@ -95,9 +92,9 @@ powers <-  rowMeans(data.frame(lb, ub))
 small <- c(1, 2, 0, 1, 0, 2, 3, 5, 7, 13, 47, 19) 
 medium <- c(17, 7, 9, 11, 7, 11, 13, 8, 8, 6, 3, 0)
 large <- c(50, 11, 8, 14, 6, 2, 5, 2, 1, 1, 0, 0)
-pos <- 97
+pos <- str_which(data.set$Author, "Woolley, Thomas W\\.$")
 estimatedMeans <- c(0.2219, 0.68865, 0.8952)
-reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
+reportedMeans <- c(data.set$PowerAtSmallEffectMean[pos], data.set$PowerAtMediumEffectMean[pos], data.set$PowerAtLargeEffectMean[pos]) 
 meanDiffs[4,] <- reportedMeans - estimatedMeans
 
 ## Borkowski, Susan C. Mary Jeanne Welsh and Zhang, Qinke	An Analysis of Statistical Power in Behavioral Accounting Research. Table 3
@@ -107,8 +104,8 @@ powers <-  rowMeans(data.frame(lb, ub))
 small <- c(0, 0, 1, 2, 1, 0, 4, 5, 20, 50, 13) 
 medium <- c(10, 11, 13, 8, 12, 16, 12, 9, 5, 0, 0) 
 large <- c(51, 12, 14, 11, 1, 6, 0, 1, 0, 0, 0)
-pos <- 59
-reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
+pos <- str_which(data.set$Author, "Borkowski, Susan C. Mary Jeanne Welsh and Zhang")
+reportedMeans <- c(data.set$PowerAtSmallEffectMean[pos], data.set$PowerAtMediumEffectMean[pos], data.set$PowerAtLargeEffectMean[pos]) 
 estimatedMeans <- c(0.2002083, 0.6551562,  0.8832813)
 meanDiffs[5,] <- reportedMeans - estimatedMeans
 
@@ -119,9 +116,8 @@ powers <-  rowMeans(data.frame(lb, ub))
 small <- c(1, 3, 2, 2, 2, 5, 8, 9, 8, 29, 79, 44) 
 medium <- c(29, 8, 8, 22, 21, 13, 23, 24, 18, 13, 11, 2) 
 large <- c(65, 30, 21, 26, 15, 14, 7, 5, 4, 4, 1, 0)
-
-pos <- 60 
-reportedMeans <- c(dat$PowerAtSmallEffectMean[pos], dat$PowerAtMediumEffectMean[pos], dat$PowerAtLargeEffectMean[pos]) 
+pos <- str_which(data.set$Author, "Woolley, Thomas W\\. and Dawson")
+reportedMeans <- c(data.set$PowerAtSmallEffectMean[pos], data.set$PowerAtMediumEffectMean[pos], data.set$PowerAtLargeEffectMean[pos]) 
 estimatedMeans <- c(0.2129196, 0.6294271,  0.8524219)
 meanDiffs[6,] <- reportedMeans - estimatedMeans
 
@@ -151,123 +147,3 @@ estimatedMeans <- c(0.2297727, 0.6015909,  0.8289773)
 meanDiffs[8,] <- reportedMeans - estimatedMeans
 
 meanAbsDiff <- mean(abs(as.matrix(meanDiffs)), na.rm = T)
-
-
-
-########### DIST FITTING ##########
-# alternative method
-# install.packages('binsmooth')
-library(binsmooth) # not used
-# install.packages('bda')
-library(bda) # not used
-# install.packages('truncdist')
-library(mixR) # not used
-library(psych)
-library("fitdistrplus")
-library(truncdist)
-
-
-ub <-  rev(c(1, .98, .94, .89, .79, .69, .59, .49, .39, .29, .19, .09))
-medium <- rev(c(6, 2, 2, 3, 4, 4, 6, 4, 7, 3, 3, 0))
-
-
-# # This method assumes vals > 1 are possible ~ not ideal 
-fittedA <- splinebins(bEdges =  (ub), bCounts = (medium), monoMethod = 'monoH.FC')
-
-bde(x = medium, counts = medium, breaks = ub, lbound = .05)
-
-plot(fitted$splinePDF(seq(0,1,.01)), x = (seq(0,1,.01)), type = 'l')
-plot(ub, medium, type = 'h')
-lines(fitted$splinePDF(seq(0,1,.01)), x = (seq(0,1,.01)))
-
-temp<-binning(counts=rev(medium)[-1], breaks= rev(ub))
-plot(fit.GB(temp, 0,1))
-plot(temp)
-
-# binned matrix of tables
-binned <- matrix(c(lb,ub, large), length(lb))
-# ordering table
-binned<-binned[order(binned[,2]),]
-# plot(bs.test(binned, c(2,1), family = 'gamma'))
-
-plot(mixfit(binned, 2, family = 'truncgamma'))
-
-res<-select(binned, 'gamma', ncomp = c(1,2,3))
-res
-plot(mixfit(binned, family = 'gamma', ncomp = 1))
-
-binned <-data.frame(binned)
-names(binned) <- c("left", "right", "count")
- 
-### USING TRUNC 
-ptruncgamma <- function(q, shape, scale) {
-  p <- ptrunc(q, spec = 'gamma', a = 0, b = 1, shape = shape, scale = scale)
-  p[q >= 1] <- 0
-  return(p)
-}
-dtruncgamma <- function(x, shape, scale) {
-  dtrunc(x, spec = 'gamma', a = 0, b = 1, shape = shape, scale = scale)
-}
-
-
-# USING DEFAULT GAMMA
-ptruncgamma <- function(q, shape, scale) {
-  p <- pgamma(q, shape = shape, scale = scale)
-  p[q >= 1] <- 0
-  return(p)
-}
-
-dtruncgamma <- function(x, shape, scale) {
-  d <- dgamma(x, shape = shape, scale = scale)
-  d[x >= 1] <- 0
-  return(d)
-}
-
-
-
-init <- fitdistcens(binned, distr = "gamma", start = list(shape = .5, scale = .1))
-
-
-fitdistcens(binned, distr = "truncgamma", start = list(shape = as.numeric(init[[1]][1]), scale = as.numeric(init[[1]][2])))
-
-
-
-
-extrunc(spec = "gamma", a = 0, b = 1, shape = as.numeric(init[[1]][1]), scale = as.numeric(init[[1]][2]))
-vartrunc(spec = "gamma", a = 0, b = 1, shape = as.numeric(init[[1]][1]), scale = as.numeric(init[[1]][2]))
-
-
-
-dtrunc(1, 0, 1)
-
-truncnorm::dtruncnorm(1, )
-fitdistcens(binned, distr = "truncnorm", start = list(mean = .66, sd = .01), a = 0, b = 1)
-
-aa <- c(-10,-1,-0.5,-0.2,-0.15)
-## fit by MLE for the various lower bounds
-fits <- lapply(aa, function(a){
-  fitdistcens(binned, "truncnorm", fix.arg=list(a=a),
-          start = list(mean = .5, sd = .5))
-})
-
-
-fitdistcens(binned, distr = "truncgamma", start = list(shape = .5, scale = .1))
-
-ptrunc(2, spec = 'gamma', a = -0, b = 1, shape = as.numeric(init[[1]][1]), scale = as.numeric(init[[1]][2]))
-
-estimates<-as.numeric(fitdistcens(binned, distr = "beta")[[1]])
-
-
-mledist(binned, 'beta')
-
-?mledist
-plot(seq(-.1,1.1,.01),  dtruncgamma(seq(-.10,1.1,.01), shape = 1, scale = 1))
-
-plot(seq(-.1,1.1,.01),  dtruncgamma(seq(-.10,1.1,.01), shape = 1, scale = 1))
-plot(seq(-.1,1.1,.01),  pgamma(seq(-0.1,1.1,.01), shape = 1, scale = 1))
-
-
-plot(seq(-.5,1.5,.01),  dtruncnorm(seq(-.5,1.5,.01), mean = .5, sd = 1, a = 0, b = 1))
-plot(seq(-.5,1.5,.01),  dnorm(seq(-0.5,1.5,.01), mean = .5, sd = 1))
-
-dtru
