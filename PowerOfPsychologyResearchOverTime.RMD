@@ -1363,7 +1363,7 @@ sensitivityLarge[4,]  <- data.frame(model = "No random effects for article",
 
 # Collecting output from models treating output as simple means
 
-sensitivityLarge[5,c(1,2,3,4,8,9,10)] <- data.frame(model = "Untransformed power estimates", 
+sensitivitySmall[5,c(1,2,3,4,8,9,10)] <- data.frame(model = "Untransformed power estimates", 
             be = smallMod$b[1],
             ll = smallMod$ci.lb[1],
             ul = smallMod$ci.ub[1],
@@ -1371,7 +1371,7 @@ sensitivityLarge[5,c(1,2,3,4,8,9,10)] <- data.frame(model = "Untransformed power
             differenceLL = smallMod$ci.lb[2],
             differenceUL = smallMod$ci.ub[2])
 
-sensitivityLarge[5,c(1,2,3,4,8,9,10)] <- data.frame(model = "Untransformed power estimates", 
+sensitivityMed[5,c(1,2,3,4,8,9,10)] <- data.frame(model = "Untransformed power estimates", 
             be = medMod$b[1],
             ll = medMod$ci.lb[1],
             ul = medMod$ci.ub[1],
