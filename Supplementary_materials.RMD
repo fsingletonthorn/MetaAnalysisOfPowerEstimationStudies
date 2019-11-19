@@ -277,8 +277,12 @@ dataSet <- dataSet[order(dataSet$medianYear),]
 datSetSensat <- dataSet
 
 #### Excluding data with text in the exclude box and medical studies 
-dataSet$excludeAndJustification[c(6,7,3,11,20)] <- "Exclude"
-datSA <- subset(dataSet, is.na(dataSet$exclude))
+
+datSA <- dataSet %>%
+  filter(SubfieldClassification != "Medicine") %>%
+  filter(SubfieldClassification != "Nursing") %>%
+  filter(PaperCitation != "de Bekker-Grob, Bas Donkers, Jonker, & Stolk (2015)") %>%
+  filter(is.na(excludeAndJustification))
 
 ```
 
